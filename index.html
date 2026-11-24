@@ -1860,7 +1860,7 @@ function renderSlotBar(){ const el=$("slotbar"); if(!el) return; document.body.c
   if(nextDate) h+=`<button type="button" class="slotbtn" data-slot="next" aria-pressed="${slot==="next"}"><b>${esc(wkRange(weekStart(nextDate)))}</b> <span>Next week, draft</span></button>`;
   else if(canStartNext()) h+=`<button type="button" class="slotbtn new" id="slotnew">+ Start next week (${esc(wkRange(plusDays(weekStart(draftDate),7)))})</button>`;
   if(!ap && draftDate && today() >= plusDays(weekStart(draftDate),14)) h+=`<span class="slotwarn">The week of ${esc(wkRange(weekStart(draftDate)))} still needs ${OWNER()?"your":"the super admin's"} approval. No further week can start until it's approved.</span>`;
-  if(slot==="next") h+=`<span class="slotnote">You're entering details for next week. The earlier week is still waiting for approval.</span>`;
+  if(slot==="next") h+=`<span class="slotnote">You're entering details for next week. The earlier week is still waiting for approval; its tasks are under Actions &amp; tasks to check now, and your ticks are kept when it's approved.</span>`;
   if(el.innerHTML!==h) el.innerHTML=h; }
 async function loadSlot(sl){ let S=lsGet(sl==="draft"?KEY:KEY+"-next");
   if(db){ try{ const d=await db.doc("audit/"+sl).get(); const v=d.exists?(d.data()||{}):{}; if(v.json){ const r=JSON.parse(v.json); if(!S || (v.updatedAt||0)>(S.updatedAt||0)) S=r; } }catch(e){} }
@@ -1868,8 +1868,10 @@ async function loadSlot(sl){ let S=lsGet(sl==="draft"?KEY:KEY+"-next");
 async function switchSlot(to){ if(to===slot) return;
   clearTimeout(timers.draft); if(db && role!=="viewer"){ try{ await db.doc(DOC()).set({json:lean(st), updatedAt:st.updatedAt||Date.now()}); }catch(e){} }
   const S=await loadSlot(to); if(!S){ toast("That week couldn't be loaded."); return; }
+  if(to==="next"){ try{ const D = slot==="draft" ? st : (await loadSlot("draft")); if(D) S.carry = mergeCarry(buildCarry(normalize(Object.assign(blank(), JSON.parse(JSON.stringify(D))))), S.carry); }catch(e){} }
   slot=to; st=normalize(Object.assign(blank(), S)); lsSet(LSK(), st); prevCache={id:null,st:null}; firstShown=true; lastLogged=JSON.parse(lean(st));
   init(); renderMgmt(); applyLock(); renderSlotBar(); window.scrollTo(0,0);
+  if(to==="next" && (st.carry||[]).length && typeof firstCheck==="function"){ firstShown=false; setTimeout(()=>firstCheck(),400); }
   toast(to==="next" ? `Now entering next week: ${wkRange(weekStart(st.date))}.` : `Back to the week of ${wkRange(weekStart(st.date))}.`); }
 async function startNextWeek(){ if(!canStartNext()) return;
   const base = slot==="draft" ? st : (lsGet(KEY)||st);
@@ -1878,18 +1880,27 @@ async function startNextWeek(){ if(!canStartNext()) return;
   if(db){ try{ await db.doc("audit/next").set({json:lean(nx), updatedAt:nx.updatedAt}); }catch(e){ toast("Next week was saved on this device only."); } }
   logEvent(`Started entering next week (${wkRange(weekStart(nx.date))}) while ${wkRange(weekStart(draftDate))} awaits approval`);
   await switchSlot("next"); }
+// Tasks a week hands on to the next one. Works on any week's data (S), so next week can preview them early.
+function buildCarry(S){
+  const prev = S.carry||[]; const pm = carryMap(S); const tasks = taskList(S); const due = nextSat(S.date);
+  const act=S.act||{}, notes=S.notes||{}, photos=S.photos||{}, sc=S.s||{};
+  const carry = tasks.map(t=>{ const p=pm[t.k]; const a=act[t.k]||{};
+    return {k:t.k, code:t.code, text:t.text, v:t.v, note:notes[t.k]||"", action:a.action||"", owner:a.owner||defOwner(), due:a.due||due, weeks:p?(p.weeks||1)+1:1, obs:!!t.obs, from:S.date, photos:(photos[t.k]||[]).slice(0,3), status:""}; });
+  prev.forEach(c=>{ if(c.status==="done" || tasks.some(t=>t.k===c.k)) return; const v=sc[c.k]; if(v==="na" || (typeof v==="number" && v>=4)) return;
+    carry.push(Object.assign({}, c, {weeks:(c.weeks||1)+1, status:"", comment:""})); });
+  return carry;
+}
+// Keep ticks and comments already made on next week's copy of the tasks.
+function mergeCarry(fresh, old){ const m={}; (old||[]).forEach(c=>m[c.k]=c);
+  return fresh.map(c=>{ const o=m[c.k]; return o ? Object.assign({}, c, {status:o.status||"", comment:o.comment||""}) : c; }); }
 async function startNext(){
   if(!OWNER()){ toast("Only the owner can approve and finish a visit."); return; }
   if(slot==="next"){ toast("Switch to the earlier week to approve it. Next week is approved after that."); return; }
   if(blockIfMissing()) return;
   await saveWeek(true, lockInfo().phase==="locked");
-  const prev = st.carry||[]; const pm = carryMap(); const tasks = taskList(); const due = nextSat(st.date);
-  const carry = tasks.map(t=>{ const p=pm[t.k]; const a=st.act[t.k]||{};
-    return {k:t.k, code:t.code, text:t.text, v:t.v, note:st.notes[t.k]||"", action:a.action||"", owner:a.owner||defOwner(), due:a.due||due, weeks:p?(p.weeks||1)+1:1, obs:!!t.obs, from:st.date, photos:(st.photos[t.k]||[]).slice(0,3), status:""}; });
-  prev.forEach(c=>{ if(c.status==="done" || tasks.some(t=>t.k===c.k)) return; const v=st.s[c.k]; if(v==="na" || (typeof v==="number" && v>=4)) return;
-    carry.push(Object.assign({}, c, {weeks:(c.weeks||1)+1, status:"", comment:""})); });
+  const carry = buildCarry(st);
   let next; const pending = nextDate ? await loadSlot("next") : null;
-  if(pending){ next = normalize(Object.assign(blank(), pending)); next.carry = carry.concat((next.carry||[]).filter(c=>!carry.some(x=>x.k===c.k)));
+  if(pending){ next = normalize(Object.assign(blank(), pending)); next.carry = mergeCarry(carry, next.carry);
     if(!next.manager) next.manager=st.manager; if(!next.auditor) next.auditor=st.auditor;
     try{ localStorage.removeItem(KEY+"-next"); }catch(e){} nextDate=null; if(db){ try{ await db.doc("audit/next").set({json:"", updatedAt:Date.now(), merged:true}); }catch(e){} } }
   else { next = blank(); const nd = today()===st.date ? plusDays(st.date,7) : today();
