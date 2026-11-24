@@ -360,6 +360,17 @@ body.slot-next #saveweek,body.slot-next #reset{display:none}
 .sec .sechead .secsub .progress{display:none}
 .sec .sechead .secsub .tiny::after{content:" checked"}
 .secnav{scrollbar-width:none}.secnav::-webkit-scrollbar{display:none}
+.slotrow{background:var(--paper);border-bottom:1px solid var(--line)}
+.slotrow .slotmain{margin:0;padding:8px 0}
+.chart .pb.store{fill:var(--accent)}.chart .pb.cc{fill:#d59a1c}.chart .pb.oth{fill:var(--muted)}.chart .pb.cur{opacity:.65}
+.chart .overtxt{fill:var(--bad);font-weight:700;font-size:11px}
+.purwrap{display:grid;gap:12px}
+.purchart .chart{max-height:260px;width:100%}
+@media (min-width:900px){ .purwrap{grid-template-columns:minmax(0,1.6fr) minmax(0,1fr);align-items:center} .purwrap .purtiles{grid-template-columns:repeat(2,minmax(0,1fr))} }
+.purtiles{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+.purtiles>div{background:var(--paper);border-radius:8px;padding:8px 10px;display:grid;gap:2px}
+.purtiles span{font-size:12px;color:var(--muted)}.purtiles b{font-size:16px;font-variant-numeric:tabular-nums}.purtiles b.bad{color:var(--bad)}
+@media (max-width:560px){ .purtiles{grid-template-columns:repeat(2,minmax(0,1fr))} }
 .overbox{border:2px solid var(--bad);background:var(--bad-bg);border-radius:10px;padding:10px 12px}
 .ladder td,.ladder th{padding:6px 8px;text-align:left}.ladder tr.here td{background:var(--bad-bg)}
 details summary{cursor:pointer;color:var(--accent);font-weight:600;font-size:13.5px}
@@ -431,6 +442,7 @@ body:not([data-role]) .panel{visibility:hidden}
     </div>
   </div>
 </div>
+<div class="slotrow"><div class="wrap"><div class="slotbar slotmain" id="slotbar"></div></div></div>
 
 <div class="tabbar"><div class="sidehead"><img src="data:image/png;base64,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" alt="Angel Supermarket" width="120" height="53"><span>Store audit</span></div><div class="wrap">
   <div class="tabs" role="tablist">
@@ -445,7 +457,6 @@ body:not([data-role]) .panel{visibility:hidden}
 </div>
 
 <div class="wrap">
-  <div class="slotbar slotmain" id="slotbar"></div>
 
   <!-- AUDIT -->
   <section class="panel on stack" id="p-audit" role="tabpanel" aria-labelledby="t-audit">
@@ -665,14 +676,6 @@ body:not([data-role]) .panel{visibility:hidden}
       <div id="mgmtempty"></div>
       <div class="stack" id="mgmttiles"></div>
     </div>
-    <div class="card stack">
-      <div class="cardhead"><h2>Weekly KPI figures</h2></div>
-      <div id="kpitable"></div>
-    </div>
-    <div class="card stack">
-      <div class="cardhead"><h2>Issues: new, still open and fixed</h2></div>
-      <div class="stack" id="mgmtcompare"></div>
-    </div>
     <div class="card stack half">
       <div class="cardhead"><h2>Score trend</h2></div>
       <div id="scorechart"></div>
@@ -682,26 +685,22 @@ body:not([data-role]) .panel{visibility:hidden}
       <div class="tablewrap nohead" id="mgmttable"></div>
     </div>
     <div class="card stack">
-      <div class="cardhead"><h2>Section results over time</h2></div>
-      <div class="tablewrap nohead" id="mgmtheat"></div>
-    </div>
-    <div class="card stack half">
       <div class="cardhead"><h2>Purchases against budget</h2></div>
       <div class="stack nohead" id="mgmtpur"></div>
     </div>
-    <div class="card stack half">
-      <div class="cardhead"><h2>Email the report to management</h2></div>
-      <p class="tiny muted" style="margin:0">Up to four people. The page gets the email ready with the week-on-week report. Send it from your own email.</p>
-      <div class="grid2">
-        <label class="f" for="mg_e1">Email 1<input type="email" id="mg_e1" data-mg="0" autocomplete="off"></label>
-        <label class="f" for="mg_e2">Email 2<input type="email" id="mg_e2" data-mg="1" autocomplete="off"></label>
-        <label class="f" for="mg_e3">Email 3<input type="email" id="mg_e3" data-mg="2" autocomplete="off"></label>
-        <label class="f" for="mg_e4">Email 4<input type="email" id="mg_e4" data-mg="3" autocomplete="off"></label>
-      </div>
-      <div class="actions"><button class="btn sm" type="button" id="mail_mg">Prepare email</button></div>
-      <div class="stack" id="mail_mg_out" hidden></div>
+    <div class="card stack" data-fold>
+      <div class="cardhead"><h2>Weekly KPI figures</h2></div>
+      <div id="kpitable"></div>
     </div>
-    <div class="card stack half">
+    <div class="card stack" data-fold>
+      <div class="cardhead"><h2>Issues: new, still open and fixed</h2></div>
+      <div class="stack" id="mgmtcompare"></div>
+    </div>
+    <div class="card stack" data-fold>
+      <div class="cardhead"><h2>Section results over time</h2></div>
+      <div class="tablewrap nohead" id="mgmtheat"></div>
+    </div>
+    <div class="card stack" data-fold>
       <div class="cardhead"><h2>Download reports by date</h2></div>
       <p class="tiny muted" style="margin:0">Pick the visit dates to cover. Only weeks a super admin has approved are included. The PDF-ready files open in any browser: choose Print, then Save as PDF. The CSV files open in Excel.</p>
       <div class="grid2">
@@ -728,7 +727,19 @@ body:not([data-role]) .panel{visibility:hidden}
         <button class="btn ghost" type="button" id="rp_mgmtcsv">Management report (Excel/CSV)</button>
       </div>
     </div>
-    <div class="card stack half">
+    <div class="card stack" data-fold>
+      <div class="cardhead"><h2>Email the report to management</h2></div>
+      <p class="tiny muted" style="margin:0">Up to four people. The page gets the email ready with the week-on-week report. Send it from your own email.</p>
+      <div class="grid2">
+        <label class="f" for="mg_e1">Email 1<input type="email" id="mg_e1" data-mg="0" autocomplete="off"></label>
+        <label class="f" for="mg_e2">Email 2<input type="email" id="mg_e2" data-mg="1" autocomplete="off"></label>
+        <label class="f" for="mg_e3">Email 3<input type="email" id="mg_e3" data-mg="2" autocomplete="off"></label>
+        <label class="f" for="mg_e4">Email 4<input type="email" id="mg_e4" data-mg="3" autocomplete="off"></label>
+      </div>
+      <div class="actions"><button class="btn sm" type="button" id="mail_mg">Prepare email</button></div>
+      <div class="stack" id="mail_mg_out" hidden></div>
+    </div>
+    <div class="card stack" data-fold>
       <div class="cardhead"><h2>Share and back up</h2></div>
       <div class="actions">
         <button class="btn" type="button" id="copymgmt">Copy management report</button>
@@ -1888,24 +1899,30 @@ function renderPur(full){
   }
 }
 function purSeries(){
-  const s = weeks.map(w=>({label:fmtDate(w.id), spent:w.sum.pur?w.sum.pur.spent:0, budget:w.sum.pur?w.sum.pur.budget:0, cur:false}));
-  const t=purTotals(); if(!weeks.some(w=>w.id===st.date)) s.push({label:fmtDate(st.date), spent:t.spent, budget:t.budget, cur:true});
+  const t=purTotals(); const live = slot==="draft";
+  const s = weeks.map(w=> (live && w.id===st.date) ? {label:fmtDate(w.id), spent:t.spent, budget:t.budget, store:t.store, cc:t.cc, cur:true}
+    : ({label:fmtDate(w.id), spent:w.sum.pur?w.sum.pur.spent:0, budget:w.sum.pur?w.sum.pur.budget:0, store:w.sum.pur?(w.sum.pur.store||0):0, cc:w.sum.pur?(w.sum.pur.cc||0):0, cur:false}));
+  if(!weeks.some(w=>w.id===st.date)) s.push({label:fmtDate(st.date), spent:t.spent, budget:t.budget, store:t.store, cc:t.cc, cur:true});
   return s.slice(-8);
 }
 function niceMax(v){ if(v<=0) return 100; const p=Math.pow(10,Math.floor(Math.log10(v))); const m=v/p; return (m<=1?1:m<=2?2:m<=5?5:10)*p; }
 function purTrendSvg(){
   const d=purSeries(); if(!d.some(x=>x.spent||x.budget)) return `<span class="tiny muted">The chart fills in as you log purchases each week.</span>`;
-  const W=440,H=200,L=52,R=12,T=14,B=30; const mx=niceMax(Math.max(...d.map(x=>Math.max(x.spent,x.budget)))*1.05);
+  const W=440,H=210,L=52,R=12,T=18,B=30; const mx=niceMax(Math.max(...d.map(x=>Math.max(x.spent,x.budget)))*1.08);
   const y=v=>T+(H-T-B)*(1-v/mx); const slot=(W-L-R)/d.length; const bw=Math.min(46,slot*.55);
   let g=""; [0,.5,1].forEach(f=>{ const v=mx*f; g+=`<line class="grid" x1="${L}" x2="${W-R}" y1="${y(v)}" y2="${y(v)}"/><text x="${L-6}" y="${y(v)+4}" text-anchor="end">${gbp(v)}</text>`; });
-  d.forEach((x,i)=>{ const cx=L+slot*i+slot/2; const top=y(x.spent); const over=x.budget&&x.spent>x.budget;
-    const h=Math.max(0,y(0)-top); const r=Math.min(4,h);
-    g+=`<path class="bar${over?" over":""}${x.cur?" cur":""}" d="M${cx-bw/2},${y(0)} V${top+r} Q${cx-bw/2},${top} ${cx-bw/2+r},${top} H${cx+bw/2-r} Q${cx+bw/2},${top} ${cx+bw/2},${top+r} V${y(0)} Z"><title>${x.label}${x.cur?" (this visit)":""}: ${gbp(x.spent)} spent${x.budget?`, budget ${gbp(x.budget)}`:""}</title></path>`;
+  d.forEach(x=>{ x.other=Math.max(0,+(x.spent-(x.store||0)-(x.cc||0)).toFixed(2)); });
+  d.forEach((x,i)=>{ const cx=L+slot*i+slot/2; let base=0; const over=x.budget&&x.spent>x.budget;
+    [["store",x.store||0],["cc",x.cc||0],["oth",x.other||0]].forEach(([c,v])=>{ if(!v) return; const y1=y(base+v), y0=y(base);
+      g+=`<rect class="pb ${c}${x.cur?" cur":""}" x="${cx-bw/2}" y="${y1}" width="${bw}" height="${Math.max(0,y0-y1)}"><title>${x.label}: ${c==="store"?"Store":c==="cc"?"Cash & Carry":"Other"} ${gbp(v)}</title></rect>`; base+=v; });
+    if(over) g+=`<text class="overtxt" x="${cx}" y="${y(x.spent)-5}" text-anchor="middle">Over</text>`;
     if(x.budget) g+=`<line class="budget" x1="${cx-slot*.42}" x2="${cx+slot*.42}" y1="${y(x.budget)}" y2="${y(x.budget)}"/>`;
     g+=`<text x="${cx}" y="${H-10}" text-anchor="middle">${x.label}${x.cur?"*":""}</text>`; });
   g+=`<line class="base" x1="${L}" x2="${W-R}" y1="${y(0)}" y2="${y(0)}"/>`;
-  return `<svg class="chart" viewBox="0 0 ${W} ${H}" role="img" aria-label="Weekly purchases against budget">${g}</svg>
-    <div class="key"><span><i style="background:var(--accent)"></i>Spent</span><span><i style="background:var(--bad)"></i>Spent, over budget</span><span><i style="background:var(--ink)"></i>Budget (dashed)</span>${d.some(x=>x.cur)?"<span>* this visit, not finished</span>":""}</div>`;
+  const c=d[d.length-1]; const pct=c.budget?Math.round(c.spent/c.budget*100):null;
+  return `<div class="purwrap"><div class="purchart"><svg class="chart" viewBox="0 0 ${W} ${H}" role="img" aria-label="Weekly purchases, Store and Cash and Carry, against budget">${g}</svg>
+    <div class="key"><span><i style="background:var(--accent)"></i>Store</span><span><i style="background:#d59a1c"></i>Cash &amp; Carry</span>${d.some(x=>x.other)?'<span><i style="background:var(--muted)"></i>Other</span>':""}<span><i style="background:var(--ink)"></i>Budget (dashed)</span>${d.some(x=>x.cur)?"<span>* this visit, not finished</span>":""}</div></div>
+    <div class="purtiles"><div><span>Store</span><b>${gbp(c.store||0)}</b></div><div><span>Cash &amp; Carry</span><b>${gbp(c.cc||0)}</b></div><div><span>Total</span><b>${gbp(c.spent)}</b></div><div><span>Budget used</span><b class="${pct!==null&&pct>100?"bad":""}">${pct===null?"–":pct+"%"}</b></div></div></div>`;
 }
 
 /* ---------- week history & management report ---------- */
@@ -1951,7 +1968,7 @@ function renderSlotBar(){ const el=$("slotbar"); if(!el) return; document.body.c
   if(nextDate) h+=`<button type="button" class="slotbtn" data-slot="next" aria-pressed="${slot==="next"}"><b>${esc(wkRange(weekStart(nextDate)))}</b> <span>Next week, draft</span></button>`;
   else if(canStartNext()) h+=`<button type="button" class="slotbtn new" id="slotnew">+ Start next week (${esc(wkRange(plusDays(weekStart(draftDate),7)))})</button>`;
   if(!ap && draftDate && today() >= plusDays(weekStart(draftDate),14)) h+=`<span class="slotwarn">The week of ${esc(wkRange(weekStart(draftDate)))} still needs ${OWNER()?"your":"the super admin's"} approval. No further week can start until it's approved.</span>`;
-  if(slot==="next") h+=`<span class="slotnote">You're entering details for next week. The earlier week is still waiting for approval; its tasks are under Actions &amp; tasks to check now, and your ticks are kept when it's approved.</span>`;
+  if(slot==="next") h+=`<span class="slotnote" title="The earlier week is still waiting for approval. Its tasks are under Actions &amp; tasks to check now, and your ticks are kept when it's approved.">Entering next week</span>`;
   if(el.innerHTML!==h) el.innerHTML=h; }
 async function loadSlot(sl){ let S=lsGet(sl==="draft"?KEY:KEY+"-next");
   if(db){ try{ const d=await db.doc("audit/"+sl).get(); const v=d.exists?(d.data()||{}):{}; if(v.json){ const r=JSON.parse(v.json); if(!S || (v.updatedAt||0)>(S.updatedAt||0)) S=r; } }catch(e){} }
@@ -2313,7 +2330,7 @@ function setupFolds(){
       setFold(f,false); });
     if(!folds.length) return;
     const want = foldPref[panel.id];
-    const pick = want!==undefined ? folds.find(f=>f.dataset.fid===want) : (panel.id==="p-audit" ? null : folds[0]);
+    const pick = want!==undefined ? folds.find(f=>f.dataset.fid===want) : ((panel.id==="p-audit" || panel.id==="p-report") ? null : folds[0]);
     if(pick && !(panel.id==="p-audit" && st.open>=0)) setFold(pick,true);
   });
 }
