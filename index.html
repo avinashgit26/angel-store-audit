@@ -359,7 +359,7 @@ body.slot-next #saveweek,body.slot-next #reset{display:none}
 .sec .sechead .secscore{order:2;min-width:64px}
 .sec .sechead .secsub .progress{display:none}
 .sec .sechead .secsub .tiny::after{content:" checked"}
-.secnav{scrollbar-width:none}.secnav::-webkit-scrollbar{display:none}
+.secnav{scrollbar-width:thin;scrollbar-color:var(--accent) var(--line);padding-bottom:8px}.secnav::-webkit-scrollbar{height:8px;display:block}.secnav::-webkit-scrollbar-track{background:var(--line);border-radius:99px}.secnav::-webkit-scrollbar-thumb{background:var(--accent);border-radius:99px}
 .slotrow{background:var(--paper);border-bottom:1px solid var(--line)}
 .slotrow .slotmain{margin:0;padding:8px 0}
 .chart .pb.store{fill:var(--accent)}.chart .pb.cc{fill:#d59a1c}.chart .pb.oth{fill:var(--muted)}.chart .pb.cur{opacity:.65}
@@ -429,6 +429,11 @@ h2.hh{display:flex;align-items:center;gap:9px}
 .pswitch input:checked+.ptrack::after{transform:translateX(16px)}
 .pswitch input:focus-visible+.ptrack{outline:2px solid var(--accent);outline-offset:2px}
 .pswitch input:checked~span:last-child{color:var(--bad);font-weight:600}
+.secwrap{display:flex;align-items:center;gap:6px;min-width:0}
+.secwrap .secnav{flex:1;min-width:0}
+.secarr{flex:0 0 auto;width:30px;height:30px;border-radius:50%;border:1px solid var(--line);background:var(--card);color:var(--accent);font-size:20px;line-height:1;display:grid;place-items:center;cursor:pointer;box-shadow:0 1px 4px rgba(20,26,51,.08);margin-bottom:8px}
+.secarr:hover{background:var(--accent-soft)}
+.secarr:disabled{opacity:.3;cursor:default}
 </style>
 <style>
 /* ---------- dashboard layout ---------- */
@@ -522,7 +527,9 @@ body:not([data-role]) .panel{visibility:hidden}
     </div>
 
     <div class="weekbox" id="auditweek" hidden></div>
+    <div class="secwrap"><button type="button" class="secarr l" id="secl" aria-label="Scroll sections left">&#8249;</button>
     <div class="subnav secnav" id="secnav" aria-label="Jump to a section"></div>
+    <button type="button" class="secarr r" id="secr" aria-label="Scroll sections right">&#8250;</button></div>
 
 
 
@@ -2606,6 +2613,15 @@ startRoles().then(()=>connect());
   q.addEventListener("keydown",e=>{ if(e.key==="Escape"){ q.value=""; run(); } });
   const t=$("t-guide"); if(t) t.addEventListener("click",()=>setTimeout(run,0));
 })();
+
+/* section bar: mouse wheel scrolls it sideways */
+(function(){ const n=$("secnav"), l=$("secl"), r=$("secr"); if(!n) return;
+  const upd=()=>{ const max=n.scrollWidth-n.clientWidth; if(l) l.disabled = n.scrollLeft<=2; if(r) r.disabled = n.scrollLeft>=max-2; };
+  n.addEventListener("wheel",e=>{ if(Math.abs(e.deltaY)>Math.abs(e.deltaX) && n.scrollWidth>n.clientWidth){ n.scrollLeft+=e.deltaY; e.preventDefault(); } },{passive:false});
+  n.addEventListener("scroll",upd,{passive:true}); window.addEventListener("resize",upd);
+  if(l) l.addEventListener("click",()=>n.scrollBy({left:-Math.round(n.clientWidth*.7),behavior:"smooth"}));
+  if(r) r.addEventListener("click",()=>n.scrollBy({left:Math.round(n.clientWidth*.7),behavior:"smooth"}));
+  new MutationObserver(upd).observe(n,{childList:true}); setTimeout(upd,300); })();
 
 /* ---------- pick up other people's changes ---------- */
 let lastEdit = 0; const _save = save; save = function(){ lastEdit = Date.now(); return _save(); };
