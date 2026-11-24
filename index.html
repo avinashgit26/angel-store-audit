@@ -381,6 +381,13 @@ details summary{cursor:pointer;color:var(--accent);font-weight:600;font-size:13.
 @media (max-width:640px){.actions.oneline{flex-wrap:wrap}}
 
 /* --- livelier management report --- */
+@media (min-width:1024px){
+  #p-report.on>.half{align-self:stretch;display:flex;flex-direction:column}
+  #p-report.on>.half>#mgmttable{flex:1 1 auto;contain:size;overflow:auto;min-height:0}
+}
+#mgmttable td .pill{white-space:nowrap;border-radius:999px}
+#mgmttable th,#mgmttable td{padding-left:6px;padding-right:6px}
+
 #p-report .purtiles>div{border-left:4px solid var(--pc);background:color-mix(in srgb,var(--pc) 8%,var(--card))}
 #p-report .purtiles>div:nth-child(1){--pc:var(--accent)}#p-report .purtiles>div:nth-child(2){--pc:var(--amber)}#p-report .purtiles>div:nth-child(3){--pc:#7c3aed}#p-report .purtiles>div:nth-child(4){--pc:var(--good)}
 #p-report .purtiles>div:has(b.bad){--pc:var(--bad)}
@@ -2110,7 +2117,7 @@ function renderMgmt(){
     </div>`;
   const rows=d.slice().reverse();
   $("mgmttable").innerHTML = `<h2 style="font-size:17px;margin-bottom:8px">Week by week</h2><table><thead><tr><th>Week</th><th class="r">Audit</th><th>Rating</th><th>Penalty</th><th class="r">Ops</th><th class="r">Issues</th><th class="r">Tasks done</th><th class="r">Purchases vs budget</th><th class="r">Sales vs target</th></tr></thead><tbody>${rows.map(w=>{ const pb=w.pur&&w.pur.budget?w.pur.spent/w.pur.budget:null; const sv=w.sales!==null&&w.target?w.sales/w.target:null;
-    return `<tr><td class="num">${w.label}${w.cur?"*":""}<br><span class="tiny muted">${esc(w.visit||"")}${w.submitted?" · submitted":""}</span></td><td class="r num"><b>${w.total}</b></td><td><span class="pill ${rating(w.total)[1]}">${rating(w.total)[0]}</span></td><td>${isPen(w.total)?`<span class="pill r-crit">${STAGES[stageFor(w.date||"",w.total)]}</span>`:`<span class="pill r-good">None</span>`}</td><td class="r num">${w.ops}%</td><td class="r num">${w.issues.length}</td><td class="r num">${w.carryN?`${w.carryDone}/${w.carryN}`:"–"}</td><td class="r num ${pb!==null&&pb>1?"down":""}">${pb!==null?Math.round(pb*100)+"%":"–"}</td><td class="r num ${sv!==null?(sv>=1?"up":"down"):""}">${sv!==null?Math.round(sv*100)+"%":"–"}</td></tr>`; }).join("")}</tbody></table>${rows.some(w=>w.cur)?`<p class="tiny muted" style="margin:6px 0 0">* this visit, not finished yet</p>`:""}`;
+    return `<tr><td class="num">${w.label}${w.cur?"*":""}<br><span class="tiny muted">${esc(w.visit||"")}${w.submitted?" · submitted":""}</span></td><td class="r num"><b>${w.total}</b></td><td><span class="pill ${rating(w.total)[1]}">${rating(w.total)[0]}</span></td><td>${isPen(w.total)?`<span class="pill r-crit" title="${STAGES[stageFor(w.date||"",w.total)]}">${["Informal","1st written","Final written","Dismissal"][stageFor(w.date||"",w.total)]}</span>`:`<span class="pill r-good">None</span>`}</td><td class="r num">${w.ops}%</td><td class="r num">${w.issues.length}</td><td class="r num">${w.carryN?`${w.carryDone}/${w.carryN}`:"–"}</td><td class="r num ${pb!==null&&pb>1?"down":""}">${pb!==null?Math.round(pb*100)+"%":"–"}</td><td class="r num ${sv!==null?(sv>=1?"up":"down"):""}">${sv!==null?Math.round(sv*100)+"%":"–"}</td></tr>`; }).join("")}</tbody></table>${rows.some(w=>w.cur)?`<p class="tiny muted" style="margin:6px 0 0">* this visit, not finished yet</p>`:""}`;
   const hw=d.slice(-6); const cell=v=>v===null||v===undefined?`<td class="heat muted">–</td>`:`<td class="heat ${v>=80?"h-good":v>=60?"h-amber":"h-bad"}">${v}%</td>`;
   $("mgmtheat").innerHTML = `<h2 style="font-size:17px;margin-bottom:4px">Section results over time</h2><p class="tiny muted" style="margin:0 0 8px">Share of available points earned in each section. Green 80% and over, amber 60 to 79%, red below 60%.</p><table><thead><tr><th>Section</th>${hw.map(w=>`<th class="r">${w.label}${w.cur?"*":""}</th>`).join("")}</tr></thead><tbody>${SECTIONS.map((s,i)=>`<tr><td>${i+1}. ${esc(s.n)}</td>${hw.map(w=>cell(w.secPct[i])).join("")}</tr>`).join("")}<tr><td><b>Operations</b></td>${hw.map(w=>cell(w.opsPct)).join("")}</tr></tbody></table>`;
   $("mgmtpur").innerHTML = `<h2 style="font-size:17px">Purchases against budget</h2>${purTrendSvg()}`; rpInfo();
