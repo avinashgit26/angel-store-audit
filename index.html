@@ -352,6 +352,7 @@ body.slot-next #saveweek,body.slot-next #reset{display:none}
 .secnav{flex-wrap:nowrap!important;overflow-x:auto;scrollbar-width:thin;padding-bottom:4px;-webkit-mask-image:linear-gradient(90deg,#000 92%,transparent)}
 .secnav button{flex:none;white-space:nowrap;font-weight:500!important;padding:5px 11px!important}
 .sync{font-size:12px}
+.fold:not(.open) > .guidebox:not([hidden]){display:block!important}
 .overbox{border:2px solid var(--bad);background:var(--bad-bg);border-radius:10px;padding:10px 12px}
 .ladder td,.ladder th{padding:6px 8px;text-align:left}.ladder tr.here td{background:var(--bad-bg)}
 details summary{cursor:pointer;color:var(--accent);font-weight:600;font-size:13.5px}
@@ -487,7 +488,8 @@ body:not([data-role]) .panel{visibility:hidden}
     </div>
 
     <div class="card stack" id="ops-dsr" data-fold>
-      <div class="cardhead"><h2>Daily sales record <span class="ownertag hr" title="HR fills this in">HR</span></h2><span class="tiny muted num" id="dsrdays"></span></div>
+      <div class="cardhead"><h2>Daily sales record <button type="button" class="infobtn" data-info="dsr" aria-label="About Daily sales record" aria-expanded="false">i</button> <span class="ownertag hr" title="HR fills this in">HR</span></h2><span class="tiny muted num" id="dsrdays"></span></div>
+      <div class="guidebox secinfo" id="gidsr" hidden><div><b>What this covers:</b> the store's daily sales record for each day of the audit week, Monday to Sunday.</div><div><b>How to fill it in:</b> HR checks every day's record, then ticks the box. Note anything wrong: missing days, figures that don't match the till reports, or unexplained cash differences.</div></div>
       <p class="tiny muted" style="margin:0">Completed by HR. Tick when the daily sales record has been checked for the week and note any issues found.</p>
       <label class="chk" for="dsr_done"><input type="checkbox" id="dsr_done"><span>Daily sales record checked for every day of the audit week (Monday to Sunday)</span></label>
       <label class="f" for="dsr_issues">Issues found (till variances, missing days, refunds, anything unusual)<textarea id="dsr_issues" rows="3" placeholder="e.g. Tuesday till 2 short by £12.40, no Z-read on Thursday"></textarea></label>
@@ -495,7 +497,8 @@ body:not([data-role]) .panel{visibility:hidden}
     </div>
 
     <div class="card stack" id="ops-online" data-fold>
-      <div class="cardhead"><h2>Online orders in the audit week <span class="ownertag hr" title="HR fills this in">HR</span></h2><span class="tiny muted">Deliveroo, Just Eat and own website</span></div>
+      <div class="cardhead"><h2>Online orders in the audit week <button type="button" class="infobtn" data-info="ol" aria-label="About Online orders" aria-expanded="false">i</button> <span class="ownertag hr" title="HR fills this in">HR</span></h2><span class="tiny muted">Deliveroo, Just Eat and own website</span></div>
+      <div class="guidebox secinfo" id="giol" hidden><div><b>What this covers:</b> orders from Deliveroo, Just Eat and the store's own website during the audit week.</div><div><b>How to fill it in:</b> take the numbers from each platform's weekly report. Enter orders received, orders with issues, orders that didn't reach the customer, and items missing. The KPI table works out the rates automatically.</div></div>
       <div class="grid3">
         <label class="f" for="ol_orders">Orders received<input type="number" min="0" inputmode="numeric" id="ol_orders" data-ol="orders"></label>
         <label class="f" for="ol_issues">Orders with a problem<input type="number" min="0" inputmode="numeric" id="ol_issues" data-ol="issues"></label>
@@ -509,7 +512,8 @@ body:not([data-role]) .panel{visibility:hidden}
     </div>
 
     <div class="card stack" id="ops-inv" data-fold>
-      <div class="cardhead"><h2>Daily purchases: Store and Cash &amp; Carry <span class="ownertag hr" title="HR fills this in">HR</span></h2><span class="tiny muted num" id="invcount"></span></div>
+      <div class="cardhead"><h2>Daily purchases: Store and Cash &amp; Carry <button type="button" class="infobtn" data-info="inv" aria-label="About Daily purchases" aria-expanded="false">i</button> <span class="ownertag hr" title="HR fills this in">HR</span></h2><span class="tiny muted num" id="invcount"></span></div>
+      <div class="guidebox secinfo" id="giinv" hidden><div><b>What this covers:</b> what the store bought each day, split into Store purchases (deliveries to the shop) and Cash &amp; Carry, Monday to Sunday.</div><div><b>How to fill it in:</b> enter each day's total from the invoices and receipts, excluding VAT. The weekly total and budget check below update automatically.</div></div>
       <label class="f" for="purweek" style="max-width:260px">Week starting (Monday)<input type="date" id="purweek"></label>
       <div class="purgrid">
         <div class="tablewrap"><table class="ptable" id="pt_store"></table></div>
@@ -520,7 +524,8 @@ body:not([data-role]) .panel{visibility:hidden}
     </div>
 
     <div class="card stack" id="ops-pur" data-fold>
-      <div class="cardhead"><h2>Weekly purchases <span class="ownertag hr" title="HR fills this in">HR</span></h2><span class="pill" id="purstatus"></span></div>
+      <div class="cardhead"><h2>Weekly purchases <button type="button" class="infobtn" data-info="pur" aria-label="About Weekly purchases" aria-expanded="false">i</button> <span class="ownertag hr" title="HR fills this in">HR</span></h2><span class="pill" id="purstatus"></span></div>
+      <div class="guidebox secinfo" id="gipur" hidden><div><b>What this covers:</b> the week's total purchases against the weekly budget, set at &pound;25,000 unless a super admin changes it.</div><div><b>How it works:</b> week total = Store + Cash &amp; Carry purchases for Monday to Sunday. Budget used % = week total &divide; budget &times; 100. If the week goes over budget, write the reason; it appears in the management report.</div></div>
       <div class="grid2">
         <label class="f" for="budget">Weekly purchase budget (£, ex VAT)<input type="number" min="0" step="any" inputmode="decimal" id="budget"></label>
       </div>
@@ -540,7 +545,8 @@ body:not([data-role]) .panel{visibility:hidden}
     </div>
 
     <div class="card stack" id="ops-cnt" data-fold>
-      <div class="cardhead"><h2>Stock count spot check <span class="ownertag am" title="Area Manager fills this in">Area Manager</span></h2></div>
+      <div class="cardhead"><h2>Stock count spot check <button type="button" class="infobtn" data-info="cnt" aria-label="About Stock count spot check" aria-expanded="false">i</button> <span class="ownertag am" title="Area Manager fills this in">Area Manager</span></h2></div>
+      <div class="guidebox secinfo" id="gicnt" hidden><div><b>What this covers:</b> a quick count of a few high-value lines (tobacco, spirits, baby milk) compared with the stock the system says should be there.</div><div><b>How to fill it in:</b> the area manager counts each line on the shelf and in the back, and enters the system figure next to it. Any difference shows as a variance to explain and follow up.</div></div>
       <p class="tiny muted" style="margin:0">Count a few high-value lines (tobacco, spirits, baby milk) and compare with the system.</p>
       <div class="grid3">
         <label class="f" for="sl">Product<input type="text" id="sl"></label>
