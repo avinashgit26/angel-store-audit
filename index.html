@@ -420,7 +420,15 @@ h2.hh{display:flex;align-items:center;gap:9px}
 .gsearch:focus-within{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
 #gqn{white-space:nowrap}
 ::highlight(gq){background:#ffe066;color:#141a33}
-.byrow>span.tiny:first-child{min-width:58px}
+.seg.segsm button{padding:3px 9px;font-size:12.5px;border-radius:6px}
+.pswitch{display:inline-flex;align-items:center;gap:8px;margin-left:10px;cursor:pointer;font-size:13.5px;user-select:none}
+.pswitch input{position:absolute;opacity:0;width:1px;height:1px}
+.ptrack{position:relative;width:36px;height:20px;border-radius:999px;background:var(--line);transition:background .15s;flex:0 0 auto}
+.ptrack::after{content:"";position:absolute;top:2px;left:2px;width:16px;height:16px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.25);transition:transform .15s}
+.pswitch input:checked+.ptrack{background:var(--bad)}
+.pswitch input:checked+.ptrack::after{transform:translateX(16px)}
+.pswitch input:focus-visible+.ptrack{outline:2px solid var(--accent);outline-offset:2px}
+.pswitch input:checked~span:last-child{color:var(--bad);font-weight:600}
 </style>
 <style>
 /* ---------- dashboard layout ---------- */
@@ -1580,8 +1588,8 @@ function renderObs(){
   $("obslist").innerHTML = L.map((o,i)=>{ const k="x."+o.id, key=kk(k), a=st.act[k]||{};
     return `<div class="card finding sev2 stack">
       <div class="cardhead"><h3>Observation ${i+1} ${oPri(o)==="high"?'<span class="pill r-poor">High priority</span>':'<span class="pill r-mut">Normal priority</span>'}</h3><button type="button" class="iconbtn" data-delobs="${o.id}">Remove</button></div>
-      <div class="byrow"><span class="tiny muted">Added by</span><div class="seg" role="group" aria-label="Who is adding this observation"><button type="button" data-xby="${o.id}" data-v="sm" aria-pressed="${(o.by||"am")==="sm"}">Store Manager</button><button type="button" data-xby="${o.id}" data-v="am" aria-pressed="${(o.by||"am")==="am"}">Area Manager</button></div></div>
-      <div class="byrow"><span class="tiny muted">Priority</span><div class="seg" role="group" aria-label="Priority of this observation"><button type="button" data-xpri="${o.id}" data-v="normal" aria-pressed="${oPri(o)==="normal"}">Normal</button><button type="button" data-xpri="${o.id}" data-v="high" aria-pressed="${oPri(o)==="high"}">High</button></div></div>
+      <div class="byrow"><span class="tiny muted">Added by</span><div class="seg segsm" role="group" aria-label="Who is adding this observation"><button type="button" data-xby="${o.id}" data-v="sm" aria-pressed="${(o.by||"am")==="sm"}">Store Manager</button><button type="button" data-xby="${o.id}" data-v="am" aria-pressed="${(o.by||"am")==="am"}">Area Manager</button></div>
+      <label class="pswitch"><input type="checkbox" role="switch" data-xpri="${o.id}" ${oPri(o)==="high"?"checked":""}><span class="ptrack" aria-hidden="true"></span><span>High priority</span></label></div>
       <label class="f" for="xt${key}">What did you find?<textarea id="xt${key}" data-xo="${o.id}" rows="2" placeholder="e.g. Broken shelf strip by the chillers, customer tripped last week">${esc(o.text||"")}</textarea></label>
       <div class="media" id="ph${key}">${mediaHtml(k)}</div>
       <label class="f" for="xa${key}">What the store manager must do<input type="text" id="xa${key}" data-ak="${k}" data-af="action" value="${esc(a.action||"")}" placeholder="e.g. Get it repaired and send a photo"></label>
@@ -2432,7 +2440,7 @@ document.addEventListener("click", e=>{
   if(e.target.closest("#rating")){ const pop=$("ratepop"), open=pop.hidden; pop.hidden=!open; $("rating").setAttribute("aria-expanded", String(open)); return; }
   if(!$("ratepop").hidden && !e.target.closest("#ratepop")){ $("ratepop").hidden=true; $("rating").setAttribute("aria-expanded","false"); }
   const sj=e.target.closest("[data-secjump]"); if(sj){ const i=+sj.dataset.secjump, sec=$("sec"+i); if(st.open!==i){ const h=sec.querySelector(".sechead"); h && h.click(); } setTimeout(()=>{ sec.scrollIntoView({block:"start"}); window.scrollBy(0,-topH()-8); },60); return; }
-  const xp=e.target.closest("[data-xpri]"); if(xp){ const o=(st.extra||[]).find(x=>x.id===xp.dataset.xpri); if(o){ o.pri=xp.dataset.v; save(); renderObs(); renderTasks.done=false; renderTasks(); renderFindings(); } return; }
+  const xp=e.target.closest("[data-xpri]"); if(xp){ const o=(st.extra||[]).find(x=>x.id===xp.dataset.xpri); if(o){ o.pri=xp.checked?"high":"normal"; save(); renderObs(); renderTasks.done=false; renderTasks(); renderFindings(); } return; }
   const xb=e.target.closest("[data-xby]"); if(xb){ const o=(st.extra||[]).find(x=>x.id===xb.dataset.xby); if(o){ o.by=xb.dataset.v; save(); renderObs(); renderTasks.done=false; renderTasks(); renderFindings(); } return; }
   const rm=e.target.closest("[data-rmk]");
   if(rm){ const k=rm.dataset.rmk; (st.photos[k]||[]).splice(+rm.dataset.rmi,1); save(); renderMedia(k); renderFindings(); if(k.endsWith("!p")){ renderTasks.done=false; renderTasks(); refreshFirst(); } toast("Photo removed."); return; }
