@@ -566,7 +566,6 @@ body:not([data-role]) .panel{visibility:hidden}
     <div class="card stack" data-fold>
       <div class="cardhead"><h2>Check last visit's tasks</h2><span class="tiny muted" id="carrysum"></span></div>
       <p class="tiny muted" style="margin:0">Tasks the team was given at your last visit. Mark each one today. Anything not done moves to next week, and the same issue three visits running is flagged for escalation.</p>
-      <div class="actions"><button class="btn sm ghost" type="button" id="firstopen">Show priority check pop-up</button></div>
       <div class="stack" id="carrylist"></div>
     </div>
     <div class="card stack" data-fold>
@@ -2440,7 +2439,7 @@ $("firstdlg").addEventListener("click", e=>{ if(e.target.id==="firstdlg") closeF
 document.addEventListener("keydown", e=>{ if(e.key==="Escape" && $("firstdlg").classList.contains("on")) closeFirst(); });
 $("firstdone").addEventListener("click", ()=>{ $("firstdlg").classList.remove("on"); renderTasks.done=false; renderTasks(); });
 $("firstall").addEventListener("click", ()=>{ $("firstdlg").classList.remove("on"); $("t-tasks").click(); });
-$("firstopen").addEventListener("click", ()=>firstCheck(true));
+
 $("mail_mg").addEventListener("click", mgmtMail);
 $("dl_tasksheet").addEventListener("click", taskSheet);
 ["mail_sm_out","mail_mg_out"].forEach(id=>$(id).addEventListener("click", e=>{ const b=e.target.closest("[data-copy]"); if(!b) return; const m=$(id)._mail; if(!m) return;
