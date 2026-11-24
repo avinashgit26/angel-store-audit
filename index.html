@@ -84,7 +84,7 @@ h1,h2,h3{font-family:var(--display);text-wrap:balance;margin:0}
 .grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px}
 .grid3{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px}
 label.f{display:flex;flex-direction:column;gap:4px;font-size:13px;color:var(--muted);font-weight:500}
-input[type=text],input[type=email],input[type=date],input[type=number],select,textarea{background:var(--paper);border:1px solid var(--line);border-radius:8px;padding:9px 10px;width:100%;color:var(--ink)}
+input[type=text],input[type=email],input[type=date],input[type=time],input[type=number],select,textarea{background:var(--paper);border:1px solid var(--line);border-radius:8px;padding:9px 10px;width:100%;color:var(--ink)}
 textarea{resize:vertical;min-height:38px}
 
 .seg{display:flex;gap:6px;flex-wrap:wrap}
@@ -344,6 +344,14 @@ body.slot-next #saveweek,body.slot-next #reset{display:none}
 .secnav button{display:inline-flex;align-items:center;gap:6px}
 .odot{width:8px;height:8px;border-radius:50%;flex:none}
 .odot.sm{background:var(--accent)}.odot.hr{background:#d59a1c}.odot.am{background:#8a4fc4}
+/* calmer look */
+#auditweek{display:none!important}
+.ownertag{border:0!important;background:none!important;padding:0 0 0 14px!important;position:relative;font-weight:500!important;color:var(--muted)!important;font-size:12px!important}
+.ownertag::before{content:"";position:absolute;left:2px;top:50%;width:8px;height:8px;margin-top:-4px;border-radius:50%;background:var(--accent)}
+.ownertag.hr::before{background:#d59a1c}.ownertag.am::before{background:#8a4fc4}
+.secnav{flex-wrap:nowrap!important;overflow-x:auto;scrollbar-width:thin;padding-bottom:4px;-webkit-mask-image:linear-gradient(90deg,#000 92%,transparent)}
+.secnav button{flex:none;white-space:nowrap;font-weight:500!important;padding:5px 11px!important}
+.sync{font-size:12px}
 .overbox{border:2px solid var(--bad);background:var(--bad-bg);border-radius:10px;padding:10px 12px}
 .ladder td,.ladder th{padding:6px 8px;text-align:left}.ladder tr.here td{background:var(--bad-bg)}
 details summary{cursor:pointer;color:var(--accent);font-weight:600;font-size:13.5px}
@@ -442,7 +450,7 @@ body:not([data-role]) .panel{visibility:hidden}
       </div>
     </div>
 
-    <div class="weekbox" id="auditweek"></div>
+    <div class="weekbox" id="auditweek" hidden></div>
     <div class="subnav secnav" id="secnav" aria-label="Jump to a section"></div>
 
 
@@ -470,7 +478,7 @@ body:not([data-role]) .panel{visibility:hidden}
 
     <div class="sec stripe" id="opsbox" data-fold>
       <div class="sechead">
-        <h3>Operations checks <button type="button" class="infobtn" data-info="ops" aria-label="About the operations checks" aria-expanded="false">i</button> <span class="ownertag hr">Input: HR</span></h3>
+        <h3>Operations checks <button type="button" class="infobtn" data-info="ops" aria-label="About the operations checks" aria-expanded="false">i</button> <span class="ownertag hr" title="HR fills this in">HR</span></h3>
         <span class="secscore num" id="opsscore"></span>
         <span class="secsub"><span class="progress"><i id="opsprog"></i></span><span class="tiny muted num" id="opsdone"></span></span>
       </div>
@@ -479,7 +487,7 @@ body:not([data-role]) .panel{visibility:hidden}
     </div>
 
     <div class="card stack" id="ops-dsr" data-fold>
-      <div class="cardhead"><h2>Daily sales record <span class="ownertag hr">Input: HR</span></h2><span class="tiny muted num" id="dsrdays"></span></div>
+      <div class="cardhead"><h2>Daily sales record <span class="ownertag hr" title="HR fills this in">HR</span></h2><span class="tiny muted num" id="dsrdays"></span></div>
       <p class="tiny muted" style="margin:0">Completed by HR. Tick when the daily sales record has been checked for the week and note any issues found.</p>
       <label class="chk" for="dsr_done"><input type="checkbox" id="dsr_done"><span>Daily sales record checked for every day of the audit week (Monday to Sunday)</span></label>
       <label class="f" for="dsr_issues">Issues found (till variances, missing days, refunds, anything unusual)<textarea id="dsr_issues" rows="3" placeholder="e.g. Tuesday till 2 short by £12.40, no Z-read on Thursday"></textarea></label>
@@ -487,7 +495,7 @@ body:not([data-role]) .panel{visibility:hidden}
     </div>
 
     <div class="card stack" id="ops-online" data-fold>
-      <div class="cardhead"><h2>Online orders in the audit week <span class="ownertag hr">Input: HR</span></h2><span class="tiny muted">Deliveroo, Just Eat and own website</span></div>
+      <div class="cardhead"><h2>Online orders in the audit week <span class="ownertag hr" title="HR fills this in">HR</span></h2><span class="tiny muted">Deliveroo, Just Eat and own website</span></div>
       <div class="grid3">
         <label class="f" for="ol_orders">Orders received<input type="number" min="0" inputmode="numeric" id="ol_orders" data-ol="orders"></label>
         <label class="f" for="ol_issues">Orders with a problem<input type="number" min="0" inputmode="numeric" id="ol_issues" data-ol="issues"></label>
@@ -501,7 +509,7 @@ body:not([data-role]) .panel{visibility:hidden}
     </div>
 
     <div class="card stack" id="ops-inv" data-fold>
-      <div class="cardhead"><h2>Daily purchases: Store and Cash &amp; Carry <span class="ownertag hr">Input: HR</span></h2><span class="tiny muted num" id="invcount"></span></div>
+      <div class="cardhead"><h2>Daily purchases: Store and Cash &amp; Carry <span class="ownertag hr" title="HR fills this in">HR</span></h2><span class="tiny muted num" id="invcount"></span></div>
       <label class="f" for="purweek" style="max-width:260px">Week starting (Monday)<input type="date" id="purweek"></label>
       <div class="purgrid">
         <div class="tablewrap"><table class="ptable" id="pt_store"></table></div>
@@ -512,7 +520,7 @@ body:not([data-role]) .panel{visibility:hidden}
     </div>
 
     <div class="card stack" id="ops-pur" data-fold>
-      <div class="cardhead"><h2>Weekly purchases <span class="ownertag hr">Input: HR</span></h2><span class="pill" id="purstatus"></span></div>
+      <div class="cardhead"><h2>Weekly purchases <span class="ownertag hr" title="HR fills this in">HR</span></h2><span class="pill" id="purstatus"></span></div>
       <div class="grid2">
         <label class="f" for="budget">Weekly purchase budget (£, ex VAT)<input type="number" min="0" step="any" inputmode="decimal" id="budget"></label>
       </div>
@@ -532,7 +540,7 @@ body:not([data-role]) .panel{visibility:hidden}
     </div>
 
     <div class="card stack" id="ops-cnt" data-fold>
-      <div class="cardhead"><h2>Stock count spot check <span class="ownertag am">Input: Area Manager</span></h2></div>
+      <div class="cardhead"><h2>Stock count spot check <span class="ownertag am" title="Area Manager fills this in">Area Manager</span></h2></div>
       <p class="tiny muted" style="margin:0">Count a few high-value lines (tobacco, spirits, baby milk) and compare with the system.</p>
       <div class="grid3">
         <label class="f" for="sl">Product<input type="text" id="sl"></label>
@@ -980,7 +988,7 @@ cu("user").then(async u=>{ if(!u) return; try{ const c=await u.canEdit(); viewOn
 function setSync(s, code){
   const el=$("sync"), btn=$("syncnow");
   if(viewOnly && s!=="synced" && s!=="busy") code="viewonly";
-  if(s==="synced"){ el.textContent="Saved to your account"; btn.hidden=true; return; }
+  if(s==="synced"){ el.textContent="Saved"; btn.hidden=true; return; }
   if(s==="busy"){ el.textContent="Saving to your account…"; btn.hidden=true; return; }
   const why = REASONS[code] || (code ? String(code) : "");
   el.textContent = s==="error" ? `Saved on this device only. Not saved to your account${why?` (${why})`:""}.` : `Saved on this device only${why?` (${why})`:""}.`;
@@ -1523,7 +1531,7 @@ function checkHtml(k, code, text, hint, cm){
 }
 // Who fills in each section: HR does the sales and profit sections (the store manager can't see them), the store manager does the rest.
 const SEC_OWNER = i => i<2 ? "HR" : "Store Manager";
-const ownerTag = o => `<span class="ownertag ${o==="HR"?"hr":o==="Area Manager"?"am":"sm"}">Input: ${o}</span>`;
+const ownerTag = o => `<span class="ownertag ${o==="HR"?"hr":o==="Area Manager"?"am":"sm"}" title="${o} fills this in">${o}</span>`;
 function renderSections(){
   const cm = carryMap();
   $("sections").innerHTML = SECTIONS.map((s,i)=>`
