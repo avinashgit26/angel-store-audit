@@ -68,6 +68,13 @@ create table if not exists public.sm_sessions (
   expires_at timestamptz not null
 );
 
+-- Super admins and HR sign in by typing their email (no password or email check, by the owner's choice).
+create table if not exists public.member_sessions (
+  uid uuid primary key,
+  email text not null,
+  expires_at timestamptz not null
+);
+
 create table if not exists public.audit_log (
   id bigserial primary key,
   at timestamptz not null default now(),
@@ -81,7 +88,9 @@ create index if not exists audit_log_at on public.audit_log (at desc);
 
 -- ---------------------------------------------------------------- who is this?
 create or replace function public.my_email() returns text
-language sql stable as $$ select lower(coalesce(auth.jwt() ->> 'email', '')) $$;
+language sql stable security definer set search_path = public as $$
+  select lower(coalesce(nullif(auth.jwt() ->> 'email', ''),
+    (select ms.email from member_sessions ms where ms.uid = auth.uid() and ms.expires_at > now()), '')) $$;
 
 create or replace function public.my_role() returns text
 language sql stable security definer set search_path = public as $$
@@ -161,6 +170,23 @@ begin
   return json_build_object('ok', false, 'error', 'wrong_pin');
 end $$;
 
+create or replace function public.member_claim(p_email text) returns json
+language plpgsql security definer set search_path = public as $$
+declare e text := lower(trim(coalesce(p_email, ''))); r text;
+begin
+  if auth.uid() is null then return json_build_object('ok', false, 'error', 'no_session'); end if;
+  select role into r from members where email = e;
+  if r is null then return json_build_object('ok', false, 'error', 'not_member'); end if;
+  delete from sm_sessions where uid = auth.uid();
+  insert into member_sessions(uid, email, expires_at) values (auth.uid(), e, now() + interval '30 days')
+    on conflict (uid) do update set email = excluded.email, expires_at = excluded.expires_at;
+  insert into audit_log(actor, role, action) values (e, r, 'Signed in');
+  return json_build_object('ok', true, 'role', r);
+end $$;
+
+create or replace function public.member_release() returns void
+language sql security definer set search_path = public as $$ delete from member_sessions where uid = auth.uid() $$;
+
 create or replace function public.sm_lock() returns void
 language sql security definer set search_path = public as $$ delete from sm_sessions where uid = auth.uid() $$;
 
@@ -185,6 +211,7 @@ alter table public.config         enable row level security;
 alter table public.config_private enable row level security;
 alter table public.sm_settings    enable row level security;
 alter table public.sm_sessions    enable row level security;
+alter table public.member_sessions enable row level security;
 alter table public.audit_log      enable row level security;
 
 do $$ declare r record; begin
@@ -222,9 +249,9 @@ grant insert, update on public.drafts to authenticated;
 grant select, insert, update, delete on public.drafts_private, public.weeks, public.weeks_private,
   public.config, public.config_private, public.members to authenticated;
 grant select on public.audit_log to authenticated;
-revoke all on public.sm_settings, public.sm_sessions from anon, authenticated;
+revoke all on public.sm_settings, public.sm_sessions, public.member_sessions from anon, authenticated;
 grant execute on function public.whoami(), public.log_event(text, jsonb, text), public.sm_unlock(text),
-  public.sm_lock(), public.set_sm_pin(text) to anon, authenticated;
+  public.sm_lock(), public.set_sm_pin(text), public.member_claim(text), public.member_release() to anon, authenticated;
 
 -- ---------------------------------------------------------------- photos
 insert into storage.buckets (id, name, public) values ('photos', 'photos', true)

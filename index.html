@@ -323,6 +323,7 @@ html{scroll-padding-top:120px}
 .accttext{display:flex;flex-direction:column;line-height:1.2;min-width:0}.accttext b{font-size:13px}.accttext span{font-size:12px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:200px}
 .acctbtns{display:flex;gap:6px;flex-wrap:wrap}
 .btn.sm{padding:6px 12px;font-size:13px}
+[hidden]{display:none!important}
 .authdlg{position:fixed;inset:0;background:rgba(15,20,40,.45);display:none;align-items:center;justify-content:center;z-index:50;padding:16px}
 .authdlg.on{display:flex}
 .authbox{background:var(--card);border-radius:14px;padding:20px;width:100%;max-width:420px;box-shadow:0 20px 60px rgba(0,0,0,.25)}
@@ -781,18 +782,10 @@ body:not([data-role]) .panel{visibility:hidden}
 <div class="authdlg" id="dlg_signin" role="dialog" aria-modal="true" aria-labelledby="si_title"><div class="authbox stack">
   <div class="cardhead"><h2 id="si_title">Sign in</h2><button type="button" class="iconbtn dlgclose" aria-label="Close">✕</button></div>
   <p class="tiny muted" style="margin:0">For super admins and HR. The store manager uses the Store manager button instead.</p>
-  <div class="stack" id="si_step1">
-    <label class="f" for="si_email">Your email<input type="email" id="si_email" autocomplete="email" placeholder="name@example.com"></label>
-    <button type="button" class="btn" id="si_send">Email me a sign-in link</button>
-  </div>
-  <div class="stack" id="si_step2" hidden>
-    <p style="margin:0">We've emailed a sign-in link to <b id="si_sent"></b>. Open that email <b>on this device</b> and tap <b>Sign in</b>. This page then opens signed in.</p>
-    <p class="tiny muted" style="margin:0">It can take a minute to arrive, so check spam too. The link works once and expires after an hour. Only a few emails can be sent each hour, so wait for it before asking again.</p>
-    <details class="tiny"><summary>The email has a 6-digit code instead</summary><div class="stack" style="margin-top:6px">
-    <label class="f" for="si_code">Code from the email<input type="text" id="si_code" inputmode="numeric" autocomplete="one-time-code" maxlength="10" placeholder="123456"></label>
-    <button type="button" class="btn" id="si_verify">Sign in with the code</button></div></details>
-    <button type="button" class="notebtn" id="si_back">Use a different email</button>
-  </div>
+  <form class="stack" id="si_form" autocomplete="on" onsubmit="return false">
+    <label class="f" for="si_email">Your email<input type="email" id="si_email" autocomplete="username" placeholder="name@example.com"></label>
+    <button type="submit" class="btn" id="si_go">Sign in</button>
+  </form>
   <p class="tiny" id="si_msg" role="status" style="margin:0;color:var(--bad)"></p>
 </div></div>
 <div class="authdlg" id="dlg_pin" role="dialog" aria-modal="true" aria-labelledby="pin_title"><div class="authbox stack">
@@ -2408,23 +2401,18 @@ function closeDlg(){ document.querySelectorAll(".authdlg").forEach(d=>d.classLis
 let otpEmail="";
 document.addEventListener("click", async e=>{
   const t=e.target;
-  if(t.closest("#signin")){ $("si_step1").hidden=false; $("si_step2").hidden=true; $("si_msg").textContent=""; openDlg("dlg_signin"); return; }
+  if(t.closest("#signin")){ $("si_msg").textContent=""; openDlg("dlg_signin"); return; }
   if(t.closest("#smbtn")){ $("pin_msg").textContent=""; $("pin_in").value=""; openDlg("dlg_pin"); return; }
   if(t.closest(".dlgclose")){ closeDlg(); return; }
   if(t.closest("#signout")){ await AUTH.signOut(); location.reload(); return; }
-  if(t.closest("#si_send")){ const em=$("si_email").value.trim().toLowerCase(); if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(em)){ $("si_msg").textContent="Enter a valid email address."; return; }
-    const b=t.closest("#si_send"); b.disabled=true; $("si_msg").textContent="Sending…";
-    try{ await AUTH.sendCode(em); otpEmail=em; $("si_step1").hidden=true; $("si_step2").hidden=false; $("si_sent").textContent=em; $("si_msg").textContent=""; $("si_code").value=""; }
-    catch(err){ $("si_msg").textContent = /rate|429|seconds/i.test(err.message) ? "Too many sign-in emails were sent. Supabase only sends a few each hour, so wait a while and use the latest email you already have." : "Couldn't send the email: "+err.message; }
+  if(t.closest("#si_go")){ const em=$("si_email").value.trim().toLowerCase();
+    if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(em)){ $("si_msg").textContent="Enter a valid email address."; return; }
+    const b=t.closest("#si_go"); b.disabled=true; $("si_msg").textContent="Checking…";
+    try{ const r=await AUTH.signInEmail(em);
+      if(r.ok){ location.reload(); return; }
+      $("si_msg").textContent = r.error==="not_member" ? "This email hasn't been given access. Ask a super admin to add it. You can still view the audit." : "Couldn't sign in. Try again."; }
+    catch(err){ $("si_msg").textContent = /anonymous/i.test(err.message) ? "Sign-in isn't switched on yet. Allow anonymous sign-ins in Supabase." : "Couldn't sign in: "+err.message; }
     b.disabled=false; return; }
-  if(t.closest("#si_verify")){ const code=$("si_code").value.replace(/\D/g,""); if(code.length<6){ $("si_msg").textContent="Enter the code from the email."; return; }
-    const b=t.closest("#si_verify"); b.disabled=true; $("si_msg").textContent="Checking…";
-    try{ const m=await AUTH.verifyCode(otpEmail, code);
-      if(m.role!=="super" && m.role!=="hr"){ $("si_msg").textContent="This email hasn't been given access. Ask a super admin to add it. You can still view the audit."; await AUTH.signOut(); b.disabled=false; return; }
-      location.reload(); }
-    catch(err){ $("si_msg").textContent = /expired|invalid/i.test(err.message) ? "That code is wrong or has expired. Check the latest email, or send a new code." : "Couldn't sign in: "+err.message; }
-    b.disabled=false; return; }
-  if(t.closest("#si_back")){ $("si_step1").hidden=false; $("si_step2").hidden=true; $("si_msg").textContent=""; return; }
   if(t.closest("#pin_go")){ const pin=$("pin_in").value.replace(/\D/g,""); if(!pin){ $("pin_msg").textContent="Enter the PIN."; return; }
     const b=t.closest("#pin_go"); b.disabled=true; $("pin_msg").textContent="Checking…";
     try{ const r=await AUTH.smUnlock(pin);
@@ -2443,8 +2431,7 @@ document.addEventListener("click", async e=>{
   if(t.closest("#imp_btn")){ $("imp_file").click(); return; }
 });
 document.addEventListener("keydown", e=>{ if(e.key==="Escape") closeDlg();
-  if(e.key==="Enter" && e.target.id==="si_email"){ e.preventDefault(); $("si_send").click(); }
-  if(e.key==="Enter" && e.target.id==="si_code"){ e.preventDefault(); $("si_verify").click(); }
+  if(e.key==="Enter" && e.target.id==="si_email"){ e.preventDefault(); $("si_go").click(); }
   if(e.key==="Enter" && e.target.id==="pin_in"){ e.preventDefault(); $("pin_go").click(); } });
 async function renderPeople(){ const el=$("pplist"); if(!el) return;
   try{ const L=await AUTH.members(); el.innerHTML = `<table><thead><tr><th>Email</th><th>Name</th><th>Access</th><th></th></tr></thead><tbody>${L.map(x=>`<tr><td>${esc(x.email)}</td><td>${esc(x.name||"")}</td><td>${x.role==="super"?"Super admin":"HR"}</td><td class="r">${x.email===AUTH.me.email?'<span class="tiny muted">You</span>':`<button type="button" class="notebtn" data-rmmember="${esc(x.email)}">Remove</button>`}</td></tr>`).join("")}</tbody></table>`; }

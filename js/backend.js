@@ -213,6 +213,12 @@
       if(MEMBER()){ try{ await sb.rpc("log_event", { p_action: "Signed in", p_details: null, p_visit: null }); }catch(e){} }
       return me;
     },
+    async signInEmail(email){
+      let s = (await sb.auth.getSession()).data.session;
+      if(!s){ const a = await sb.auth.signInAnonymously(); if(a.error) throw fail(a.error); }
+      const r = await sb.rpc("member_claim", { p_email: email.trim().toLowerCase() }); if(r.error) throw fail(r.error);
+      await refreshMe(); return Object.assign({}, r.data || {}, { me });
+    },
     async smUnlock(pin){
       let s = (await sb.auth.getSession()).data.session;
       if(!s){ const a = await sb.auth.signInAnonymously(); if(a.error) throw fail(a.error); }
@@ -220,7 +226,7 @@
       await refreshMe(); return r.data || {};
     },
     async signOut(){
-      try{ if(me.role === "sm") await sb.rpc("sm_lock"); else if(MEMBER()) await sb.rpc("log_event", { p_action: "Signed out", p_details: null, p_visit: null }); }catch(e){}
+      try{ if(me.role === "sm") await sb.rpc("sm_lock"); else if(MEMBER()){ await sb.rpc("log_event", { p_action: "Signed out", p_details: null, p_visit: null }); await sb.rpc("member_release"); } }catch(e){}
       await sb.auth.signOut(); me = { role: "viewer", email: "", actor: null, name: null };
     },
     async members(){ const r = await sb.from("members").select("*").order("role").order("email"); if(r.error) throw fail(r.error); return r.data || []; },
