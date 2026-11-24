@@ -947,8 +947,8 @@ function applyLock(){
   setT($("locktext"), txt);
   setT($("roletext"), ROLE_NAME[role] ? `· You: ${ROLE_NAME[role]}` : "");
   { const w=weeks.find(x=>x.id===st.date); const ap=w && (w.approved||w.submitted); const chg=ap && (st.updatedAt||0) > (w.savedAt||0)+2000;
-    const [at,ac] = !ap ? ["Draft: awaiting super admin approval","r-ni"] : chg ? ["Changed since approval: awaiting approval","r-ni"] : ["Approved by super admin","r-good"];
-    const e=$("apprpill"); setT(e,at); if(e && e.className!=="pill "+ac) e.className="pill "+ac; }
+    const [at,ac] = (!ap || chg) ? ["Awaiting approval","r-ni"] : ["Approved","r-good"];
+    const e=$("apprpill"); setT(e,at); if(e && e.className!=="pill "+ac) e.className="pill "+ac; if(e){ const tt=apprTip(w,chg); if(e.title!==tt) e.title=tt; } }
   const wt=$("windowtext"); const wh = isNaN(L.t1) ? "" : `Visit on <b>${fmtDate(st.date)}</b>. Team edits until <b>${fmtWhen(L.t1)}</b>. Super admin edits until <b>${fmtWhen(L.t2)}</b>, then editing closes. Nothing is final until a super admin approves it.`; if(wt && wt.innerHTML!==wh) wt.innerHTML=wh;
   ["w_team","w_admin","w_hour"].forEach((i,n)=>{ const e=$(i); const v=String([cfg.teamDays??4, cfg.adminDays??5, cfg.adminHour??12][n]); if(e && document.activeElement!==e && e.value!==v) e.value = v; if(false) e.value = [cfg.teamDays??4, cfg.adminDays??5, cfg.adminHour??12][n]; });
 }
@@ -1907,7 +1907,7 @@ async function saveWeek(quiet, submit){
   if(blockIfMissing()) return null;
   const prev = weeks.find(x=>x.id===(st.date||today()));
   const w = {id: st.date||today(), savedAt: Date.now(), sum: computeSum(st), json: JSON.stringify(st)};
-  w.approved=true; w.approvedAt=Date.now();
+  w.approved=true; w.approvedAt=Date.now(); try{ w.approvedBy = (window.AUTH && AUTH.me && (AUTH.me.email||AUTH.me.actor)) || w.approvedBy || ""; }catch(e){}
   if(submit || (prev && prev.submitted)){ w.submitted=true; w.submittedAt = (prev && prev.submittedAt) || Date.now(); }
   weeks = weeks.filter(x=>x.id!==w.id).concat(w).sort((a,b)=>a.id<b.id?-1:1); lsSet(WKEY, weeks);
   let ok = true;
@@ -1919,10 +1919,15 @@ async function saveWeek(quiet, submit){
 }
 function draftApproved(){ const w=weeks.find(x=>x.id===draftDate); return !!(w && (w.approved||w.submitted)); }
 const canStartNext = () => role!=="viewer" && role!=="loading" && !nextDate && draftDate && today() >= plusDays(weekStart(draftDate),7);
+// Hover text: which super admin approved the week, and when.
+function apprTip(w, chg){ if(!w || !(w.approved||w.submitted)) return "Not approved yet. A super admin approves it.";
+  const who = (role==="owner"||role==="super") && w.approvedBy ? w.approvedBy : "a super admin";
+  const when = w.approvedAt ? new Date(w.approvedAt).toLocaleString("en-GB",{timeZone:"Europe/London",weekday:"short",day:"numeric",month:"short",year:"numeric",hour:"2-digit",minute:"2-digit"}) : "";
+  return `Approved by ${who}${when?" on "+when:""}` + (chg ? ". Changed since then, so it needs approving again." : ""); }
 function renderSlotBar(){ const el=$("slotbar"); if(!el) return; document.body.classList.toggle("slot-next", slot==="next");
   const ap=draftApproved(); const wd=weeks.find(x=>x.id===draftDate)||{}; const ds = slot==="draft" ? st : (lsGet(KEY)||{});
   const chg = ap && (ds.updatedAt||0) > (wd.savedAt||0)+2000;
-  let h=`<button type="button" class="slotbtn" data-slot="draft" aria-pressed="${slot==="draft"}"><b>${esc(wkRange(weekStart(draftDate)))}</b> <span>${!ap?"Draft, awaiting approval":chg?"Changed since approval, awaiting approval":"Approved"}</span></button>`;
+  let h=`<button type="button" class="slotbtn" data-slot="draft" aria-pressed="${slot==="draft"}"><b>${esc(wkRange(weekStart(draftDate)))}</b> <span>${(!ap||chg)?"Awaiting approval":"Approved"}</span></button>`.replace('class="slotbtn"', `class="slotbtn" title="${esc(apprTip(wd,chg))}"`);
   if(nextDate) h+=`<button type="button" class="slotbtn" data-slot="next" aria-pressed="${slot==="next"}"><b>${esc(wkRange(weekStart(nextDate)))}</b> <span>Next week, draft</span></button>`;
   else if(canStartNext()) h+=`<button type="button" class="slotbtn new" id="slotnew">+ Start next week (${esc(wkRange(plusDays(weekStart(draftDate),7)))})</button>`;
   if(!ap && draftDate && today() >= plusDays(weekStart(draftDate),14)) h+=`<span class="slotwarn">The week of ${esc(wkRange(weekStart(draftDate)))} still needs ${OWNER()?"your":"the super admin's"} approval. No further week can start until it's approved.</span>`;
