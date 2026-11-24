@@ -413,6 +413,13 @@ h2.hh{display:flex;align-items:center;gap:9px}
 .t-good{--tc:var(--good)}.t-amber{--tc:var(--amber)}.t-bad{--tc:var(--bad)}.t-info{--tc:var(--accent)}
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .c1,:root:not([data-theme="light"]) #p-report .card:has(> .cardhead .c1){--hc:#8c9bff}}
 :root[data-theme="dark"] .c1,:root[data-theme="dark"] #p-report .card:has(> .cardhead .c1){--hc:#8c9bff}
+
+.gsearch{display:flex;align-items:center;gap:8px;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:8px 12px;box-shadow:0 2px 10px rgba(20,26,51,.06)}
+.gsearch svg{width:18px;height:18px;color:var(--muted);flex:0 0 auto}
+.gsearch input{flex:1;min-width:0;border:0;outline:0;background:transparent;font:inherit;font-size:15px;color:var(--ink);padding:4px 0}
+.gsearch:focus-within{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+#gqn{white-space:nowrap}
+::highlight(gq){background:#ffe066;color:#141a33}
 </style>
 <style>
 /* ---------- dashboard layout ---------- */
@@ -799,6 +806,12 @@ body:not([data-role]) .panel{visibility:hidden}
 
   <!-- GUIDE -->
   <section class="panel stack guide" id="p-guide" role="tabpanel" aria-labelledby="t-guide">
+    <div class="gsearch" role="search">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+      <input type="search" id="gq" placeholder="Search how it works, e.g. penalty, deadline, photos" aria-label="Search how it works" autocomplete="off">
+      <span class="tiny muted" id="gqn" aria-live="polite"></span>
+    </div>
+    <div class="empty muted" id="gqnone" hidden>Nothing matches that. Try a shorter word.</div>
     <div class="card" id="scoringguide"></div>
     <div class="card" id="penguide"></div>
     <div class="card">
@@ -2551,6 +2564,36 @@ function init(){
 setupFolds();
 init();
 startRoles().then(()=>connect());
+
+/* How it works search */
+(function(){
+  const q=$("gq"); if(!q) return;
+  const panel=$("p-guide");
+  const run=()=>{
+    const words=q.value.trim().toLowerCase().split(/\s+/).filter(Boolean);
+    const cards=[...panel.querySelectorAll(":scope > .card")];
+    let shown=0; const ranges=[];
+    cards.forEach(c=>{
+      c.querySelectorAll("tr[data-gqh]").forEach(r=>{ r.hidden=false; r.removeAttribute("data-gqh"); });
+      if(!words.length){ c.hidden=false; return; }
+      const txt=c.textContent.toLowerCase();
+      const hit=words.every(w=>txt.includes(w)); c.hidden=!hit; if(!hit) return; shown++;
+      const head=(c.querySelector("h2")||{}).textContent||"";
+      if(!words.every(w=>head.toLowerCase().includes(w))){
+        c.querySelectorAll("tbody tr").forEach(r=>{ const t=r.textContent.toLowerCase(); if(!words.some(w=>t.includes(w))){ r.hidden=true; r.setAttribute("data-gqh","1"); } });
+      }
+      const tw=document.createTreeWalker(c,NodeFilter.SHOW_TEXT);
+      for(let n=tw.nextNode(); n; n=tw.nextNode()){ const t=n.nodeValue.toLowerCase();
+        words.forEach(w=>{ let i=t.indexOf(w); while(i>-1){ try{ const r=new Range(); r.setStart(n,i); r.setEnd(n,i+w.length); ranges.push(r); }catch(e){} i=t.indexOf(w,i+w.length); } }); }
+    });
+    try{ if(window.CSS&&CSS.highlights){ CSS.highlights.delete("gq"); if(ranges.length) CSS.highlights.set("gq",new Highlight(...ranges)); } }catch(e){}
+    $("gqn").textContent = words.length ? `${shown} of ${cards.length} topics` : "";
+    $("gqnone").hidden = !(words.length && !shown);
+  };
+  q.addEventListener("input",run);
+  q.addEventListener("keydown",e=>{ if(e.key==="Escape"){ q.value=""; run(); } });
+  const t=$("t-guide"); if(t) t.addEventListener("click",()=>setTimeout(run,0));
+})();
 
 /* ---------- pick up other people's changes ---------- */
 let lastEdit = 0; const _save = save; save = function(){ lastEdit = Date.now(); return _save(); };
