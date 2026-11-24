@@ -337,6 +337,13 @@ body.slot-next #saveweek,body.slot-next #reset{display:none}
 .lbcount{position:absolute;bottom:16px;left:50%;transform:translateX(-50%);color:#fff;font-size:14px;background:rgba(0,0,0,.5);padding:4px 10px;border-radius:999px}
 .lbcount:empty{display:none}
 @media (min-width:1024px){ #p-report.on{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;align-items:start} #p-report.on>*:not(.half){grid-column:1/-1} }
+#opsbar,#roletext{display:none!important}
+.ownertag.am{color:#6b2fa0;border-color:#cfb2ea;background:#f6effc}
+.byrow{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
+.secnav{flex-wrap:wrap}
+.secnav button{display:inline-flex;align-items:center;gap:6px}
+.odot{width:8px;height:8px;border-radius:50%;flex:none}
+.odot.sm{background:var(--accent)}.odot.hr{background:#d59a1c}.odot.am{background:#8a4fc4}
 .overbox{border:2px solid var(--bad);background:var(--bad-bg);border-radius:10px;padding:10px 12px}
 .ladder td,.ladder th{padding:6px 8px;text-align:left}.ladder tr.here td{background:var(--bad-bg)}
 details summary{cursor:pointer;color:var(--accent);font-weight:600;font-size:13.5px}
@@ -380,9 +387,9 @@ html{scroll-padding-top:120px}
 }
 @media (max-width:640px){ .account{width:100%;margin-left:0;justify-content:space-between} .brand .wrap{flex-wrap:wrap} .accttext span{max-width:150px} }
 /* ---------- what each role sees ---------- */
-body:not([data-role="super"]):not([data-role="hr"]) :is(#t-ops,#t-report,#p-ops,#p-report,#sec0,#sec1,.privrow,.opsrow,#logcard,#opsbar){display:none!important}
+body:not([data-role="super"]):not([data-role="hr"]) :is(#t-ops,#t-report,#p-ops,#p-report,#sec0,#sec1,.privrow,.privchip,.opsrow,#logcard,#opsbar){display:none!important}
 body:not([data-role="super"]) :is(#saveweek,#reset,#windowset,#penset,#imp_btn,#backup,label[for="restore"]){display:none!important}
-body[data-role="viewer"] :is(.sync,#slotnew,.notebtn[data-note],label.notebtn[for^="pf"],#addobs){display:none!important}
+body[data-role="viewer"] :is(.sync,#needpill,#slotnew,.notebtn[data-note],label.notebtn[for^="pf"],#addobs){display:none!important}
 body:not([data-role]) .panel{visibility:hidden}
 </style>
 </head>
@@ -436,16 +443,17 @@ body:not([data-role]) .panel{visibility:hidden}
     </div>
 
     <div class="weekbox" id="auditweek"></div>
+    <div class="subnav secnav" id="secnav" aria-label="Jump to a section"></div>
 
 
 
     <div class="stack" id="sections"></div>
 
     <div class="card stack" id="obsbox" data-fold>
-      <div class="cardhead"><h2>Other things to fix</h2><span class="tiny muted" id="obscount"></span></div>
-      <p class="tiny muted" style="margin:0">Anything you spot that isn't on the checklist. Describe it, add photos, and say what the store manager must do. Each one becomes a task for next week and is tracked like the scored checks.</p>
+      <div class="cardhead"><h2>Additional observations</h2><span class="tiny muted" id="obscount"></span></div>
+      <p class="tiny muted" style="margin:0">Anything spotted that isn\'t on the checklist, added by the store manager or the area manager. Describe it, add photos and say what must be done. Each one becomes a task for next week. <b>Observations added by the area manager are high priority.</b></p>
       <div class="stack" id="obslist"></div>
-      <div class="actions"><button class="btn sm" type="button" id="addobs">+ Add something to fix</button></div>
+      <div class="actions"><button class="btn sm" type="button" id="addobs">+ Add an observation</button></div>
     </div>
   </section>
 
@@ -471,7 +479,7 @@ body:not([data-role]) .panel{visibility:hidden}
     </div>
 
     <div class="card stack" id="ops-dsr" data-fold>
-      <div class="cardhead"><h2>Daily sales record</h2><span class="tiny muted num" id="dsrdays"></span></div>
+      <div class="cardhead"><h2>Daily sales record <span class="ownertag hr">Input: HR</span></h2><span class="tiny muted num" id="dsrdays"></span></div>
       <p class="tiny muted" style="margin:0">Completed by HR. Tick when the daily sales record has been checked for the week and note any issues found.</p>
       <label class="chk" for="dsr_done"><input type="checkbox" id="dsr_done"><span>Daily sales record checked for every day of the audit week (Monday to Sunday)</span></label>
       <label class="f" for="dsr_issues">Issues found (till variances, missing days, refunds, anything unusual)<textarea id="dsr_issues" rows="3" placeholder="e.g. Tuesday till 2 short by £12.40, no Z-read on Thursday"></textarea></label>
@@ -479,7 +487,7 @@ body:not([data-role]) .panel{visibility:hidden}
     </div>
 
     <div class="card stack" id="ops-online" data-fold>
-      <div class="cardhead"><h2>Online orders in the audit week</h2><span class="tiny muted">Deliveroo, Just Eat and own website</span></div>
+      <div class="cardhead"><h2>Online orders in the audit week <span class="ownertag hr">Input: HR</span></h2><span class="tiny muted">Deliveroo, Just Eat and own website</span></div>
       <div class="grid3">
         <label class="f" for="ol_orders">Orders received<input type="number" min="0" inputmode="numeric" id="ol_orders" data-ol="orders"></label>
         <label class="f" for="ol_issues">Orders with a problem<input type="number" min="0" inputmode="numeric" id="ol_issues" data-ol="issues"></label>
@@ -493,7 +501,7 @@ body:not([data-role]) .panel{visibility:hidden}
     </div>
 
     <div class="card stack" id="ops-inv" data-fold>
-      <div class="cardhead"><h2>Daily purchases: Store and Cash &amp; Carry</h2><span class="tiny muted num" id="invcount"></span></div>
+      <div class="cardhead"><h2>Daily purchases: Store and Cash &amp; Carry <span class="ownertag hr">Input: HR</span></h2><span class="tiny muted num" id="invcount"></span></div>
       <label class="f" for="purweek" style="max-width:260px">Week starting (Monday)<input type="date" id="purweek"></label>
       <div class="purgrid">
         <div class="tablewrap"><table class="ptable" id="pt_store"></table></div>
@@ -504,7 +512,7 @@ body:not([data-role]) .panel{visibility:hidden}
     </div>
 
     <div class="card stack" id="ops-pur" data-fold>
-      <div class="cardhead"><h2>Weekly purchases</h2><span class="pill" id="purstatus"></span></div>
+      <div class="cardhead"><h2>Weekly purchases <span class="ownertag hr">Input: HR</span></h2><span class="pill" id="purstatus"></span></div>
       <div class="grid2">
         <label class="f" for="budget">Weekly purchase budget (£, ex VAT)<input type="number" min="0" step="any" inputmode="decimal" id="budget"></label>
       </div>
@@ -524,7 +532,7 @@ body:not([data-role]) .panel{visibility:hidden}
     </div>
 
     <div class="card stack" id="ops-cnt" data-fold>
-      <div class="cardhead"><h2>Stock count spot check</h2></div>
+      <div class="cardhead"><h2>Stock count spot check <span class="ownertag am">Input: Area Manager</span></h2></div>
       <p class="tiny muted" style="margin:0">Count a few high-value lines (tobacco, spirits, baby milk) and compare with the system.</p>
       <div class="grid3">
         <label class="f" for="sl">Product<input type="text" id="sl"></label>
@@ -549,7 +557,7 @@ body:not([data-role]) .panel{visibility:hidden}
     </div>
     <div class="card stack" data-fold>
       <div class="cardhead"><h2>Tasks for the team before your next visit</h2><span class="tiny muted" id="tasksum"></span></div>
-      <p class="tiny muted" style="margin:0">Made automatically from every check scored 0 to 3 and every item under "Other things to fix" on the Audit tab. Give each one an owner and a deadline before you leave the store. Urgent items (scored 0 or 1) are marked in red; blank deadlines default to the Saturday after this visit, and the owner defaults to the name below.</p>
+      <p class="tiny muted" style="margin:0">Made automatically from every check scored 0 to 3 and every additional observation on the Audit tab. Give each one an owner and a deadline before you leave the store. Urgent items (scored 0 or 1) are marked in red; blank deadlines default to the Saturday after this visit, and the owner defaults to the name below.</p>
       <label class="f" for="taskowner" style="max-width:320px">Default owner for new tasks<input type="text" id="taskowner"></label>
       <div class="actions"><button class="btn sm" type="button" id="copytasks">Copy task list for the team</button></div>
       <textarea class="report" id="tasktext" readonly hidden aria-label="Task list text"></textarea>
@@ -578,17 +586,17 @@ body:not([data-role]) .panel{visibility:hidden}
         <label class="f" for="warnweeks">Warnings stay live for (weeks)<input type="number" min="1" max="52" inputmode="numeric" id="warnweeks"></label>
       </div>
       <div class="tablewrap"><table class="ladder"><thead><tr><th>Visits below the pass mark (within the live period)</th><th>Action against the Store Manager</th></tr></thead><tbody id="ladderbody"></tbody></table></div>
-      <p class="tiny muted" style="margin:0">Only the owner can change the pass mark and how long warnings stay live. This notice appears in the score bar, the audit report, the task email and the management report.</p>
+      <p class="tiny muted" style="margin:0">Only a super admin can change the pass mark and how long warnings stay live. This notice appears in the score bar, the audit report, the task email and the management report.</p>
     </div>
     <div class="card stack" id="windowcard" data-fold>
       <div class="cardhead"><h2 style="font-size:17px">Edit window for this visit</h2><span class="pill r-mut" id="lockpill2"></span></div>
       <div id="windowtext" class="tiny"></div>
       <div class="grid3" id="windowset">
-        <label class="f" for="w_team">Team can edit for (days after visit)<input type="number" min="0" max="14" inputmode="numeric" id="w_team"></label>
+        <label class="f" for="w_team">Store manager and HR can edit for (days after visit)<input type="number" min="0" max="14" inputmode="numeric" id="w_team"></label>
         <label class="f" for="w_admin">Super admin can edit for (days after visit)<input type="number" min="0" max="21" inputmode="numeric" id="w_admin"></label>
         <label class="f" for="w_hour">Final lock time (hour, UK time)<input type="number" min="0" max="23" inputmode="numeric" id="w_hour"></label>
       </div>
-      <p class="tiny muted" style="margin:0">Only the owner can change these. Editors can edit until 23:59 on the last team day. Editing then closes at the final lock time. Everything stays a draft until the owner approves it.</p>
+      <p class="tiny muted" style="margin:0">Only a super admin can change these. The store manager and HR can edit until 23:59 on the last team day. Editing then closes at the final lock time. Everything stays a draft until a super admin approves it.</p>
     </div>
     <div class="card stack" data-fold>
       <div class="cardhead"><h2>Section scores</h2><span class="tiny muted num" id="sumhead"></span></div>
@@ -601,7 +609,6 @@ body:not([data-role]) .panel{visibility:hidden}
     </div>
     <div class="actions">
       <button class="btn" type="button" id="copy">Copy audit report</button>
-      <button class="btn ghost" type="button" id="showreport">Show report text</button>
       <button class="btn ghost" type="button" id="saveweek">Approve this week (keep working on it)</button>
     </div>
     <div class="actions">
@@ -676,7 +683,7 @@ body:not([data-role]) .panel{visibility:hidden}
     </div>
     <div class="card stack half">
       <div class="cardhead"><h2>Download reports by date</h2></div>
-      <p class="tiny muted" style="margin:0">Pick the visit dates to cover. Only weeks the owner has approved are included. The PDF-ready files open in any browser: choose Print, then Save as PDF. The CSV files open in Excel.</p>
+      <p class="tiny muted" style="margin:0">Pick the visit dates to cover. Only weeks a super admin has approved are included. The PDF-ready files open in any browser: choose Print, then Save as PDF. The CSV files open in Excel.</p>
       <div class="grid2">
         <label class="f" for="rp_from">From<input type="date" id="rp_from"></label>
         <label class="f" for="rp_to">To<input type="date" id="rp_to"></label>
@@ -917,7 +924,7 @@ function lockInfo(S=st){
   return {phase: now<t1 ? "open" : now<t2 ? "admin" : "locked", t1, t2};
 }
 function canEditNow(){ if(role==="viewer"||role==="loading") return false; if(OWNER()) return true; const L=lockInfo(); return L.phase==="open" ? true : L.phase==="admin" ? SUPER() : false; }
-const FREE = '.infobtn,.tab,.sechead,[data-jump],#copy,#showreport,#copytasks,#copymgmt,#dlmgmt,#dlcsv,#inccur,#syncnow,#photonow,#cancelreset,#cancelrestore,#mail_sm,#mail_mg,#dl_tasksheet,#firstdone,#firstall,#rating,[data-bk],#lbprev,#lbnext,#lbclose,#firstclose,#firstopen,.mailcopy,.mailro,#needpill,[data-slot],#slotnew,#rp_from,#rp_to,[data-rq],#rp_tasks,#rp_taskcsv,#rp_mgmt,#rp_mgmtcsv';
+const FREE = '.infobtn,.tab,.sechead,[data-jump],#copy,#showreport,#copytasks,#copymgmt,#dlmgmt,#dlcsv,#inccur,#syncnow,#photonow,#cancelreset,#cancelrestore,#mail_sm,#mail_mg,#dl_tasksheet,#firstdone,#firstall,[data-secjump],#rating,[data-bk],#lbprev,#lbnext,#lbclose,#firstclose,#firstopen,.mailcopy,.mailro,#needpill,[data-slot],#slotnew,#rp_from,#rp_to,[data-rq],#rp_tasks,#rp_taskcsv,#rp_mgmt,#rp_mgmtcsv';
 const OWNER_ONLY = '#superlist';
 const REAL_OWNER = '#openedit';
 const OWNER_ANY = '#taskowner,#passmark,#warnweeks,#sm_email,[data-mg],#reset,#donext,#doreset,#backup,#w_team,#w_admin,#w_hour';
@@ -934,15 +941,15 @@ function applyLock(){
   ["addobs","addpur","addcnt"].forEach(i=>{ const b=$(i); if(b) b.hidden=!ed; });
   const [txt,cls,label] = L.phase==="open" ? [`Team can edit until ${fmtWhen(L.t1)}`,"r-good","Open"]
     : L.phase==="admin" ? [`Team editing closed. Super admin only until ${fmtWhen(L.t2)}`,"r-ni","Super admin only"]
-    : [`Editing closed ${isNaN(L.t2)?"":fmtWhen(L.t2)}. Waiting for the owner's approval`,"r-mut","Closed"];
+    : [`Editing closed ${isNaN(L.t2)?"":fmtWhen(L.t2)}. Waiting for a super admin's approval`,"r-mut","Closed"];
   const setT=(e,v)=>{ if(e && e.textContent!==v) e.textContent=v; };
   ["lockpill","lockpill2"].forEach(i=>{ const e=$(i); if(e){ setT(e,label); if(e.className!=="pill "+cls) e.className="pill "+cls; } });
   setT($("locktext"), txt);
   setT($("roletext"), ROLE_NAME[role] ? `· You: ${ROLE_NAME[role]}` : "");
   { const w=weeks.find(x=>x.id===st.date); const ap=w && (w.approved||w.submitted); const chg=ap && (st.updatedAt||0) > (w.savedAt||0)+2000;
-    const [at,ac] = !ap ? ["Draft: awaiting owner approval","r-ni"] : chg ? ["Changed since approval: awaiting approval","r-ni"] : ["Approved by owner","r-good"];
+    const [at,ac] = !ap ? ["Draft: awaiting super admin approval","r-ni"] : chg ? ["Changed since approval: awaiting approval","r-ni"] : ["Approved by super admin","r-good"];
     const e=$("apprpill"); setT(e,at); if(e && e.className!=="pill "+ac) e.className="pill "+ac; }
-  const wt=$("windowtext"); const wh = isNaN(L.t1) ? "" : `Visit on <b>${fmtDate(st.date)}</b>. Team edits until <b>${fmtWhen(L.t1)}</b>. Super admin edits until <b>${fmtWhen(L.t2)}</b>, then editing closes. Nothing is final until the owner approves it.`; if(wt && wt.innerHTML!==wh) wt.innerHTML=wh;
+  const wt=$("windowtext"); const wh = isNaN(L.t1) ? "" : `Visit on <b>${fmtDate(st.date)}</b>. Team edits until <b>${fmtWhen(L.t1)}</b>. Super admin edits until <b>${fmtWhen(L.t2)}</b>, then editing closes. Nothing is final until a super admin approves it.`; if(wt && wt.innerHTML!==wh) wt.innerHTML=wh;
   ["w_team","w_admin","w_hour"].forEach((i,n)=>{ const e=$(i); const v=String([cfg.teamDays??4, cfg.adminDays??5, cfg.adminHour??12][n]); if(e && document.activeElement!==e && e.value!==v) e.value = v; if(false) e.value = [cfg.teamDays??4, cfg.adminDays??5, cfg.adminHour??12][n]; });
 }
 function queueLock(){ if(!lockQueued){ lockQueued=true; queueMicrotask(applyLock); } }
@@ -957,7 +964,7 @@ return (async()=>{
   applyLock(); if(role!=="viewer") setTimeout(()=>firstCheck(),600);
 })();
 }
-async function autoSubmit(){ return; // visits stay drafts until the owner approves
+async function autoSubmit(){ return; // visits stay drafts until a super admin approves
   if(!SUPER() || lockInfo().phase!=="locked" || !st.date || !st.updatedAt) return;
   const w=weeks.find(x=>x.id===st.date); if(w && w.submitted && (w.savedAt||0) >= (st.updatedAt||0)) return;
   await saveWeek(true, true); toast(`Visit of ${fmtDate(st.date)} locked and submitted.`);
@@ -998,7 +1005,7 @@ function diffSummary(a,b){
   keys(a.notes,b.notes).forEach(k=>{ if((a.notes||{})[k]!==(b.notes||{})[k]) out.push(`Note on ${lab(k)}`); });
   keys(a.act,b.act).forEach(k=>{ if(!same((a.act||{})[k],(b.act||{})[k])) out.push(`Task details for ${lab(k)}`); });
   keys(a.photos,b.photos).forEach(k=>{ const x=((a.photos||{})[k]||[]).length, y=((b.photos||{})[k]||[]).length; if(y>x) out.push(`Added ${y-x} photo${y-x>1?"s":""} to ${lab(k)}`); else if(y<x) out.push(`Removed ${x-y} photo${x-y>1?"s":""} from ${lab(k)}`); });
-  if(!same((a.extra||[]).map(o=>o.text),(b.extra||[]).map(o=>o.text))) out.push("Other things to fix updated");
+  if(!same((a.extra||[]).map(o=>o.text),(b.extra||[]).map(o=>o.text))) out.push("Additional observations updated");
   const kpiNames={}; Object.values(FIG).forEach(f=>(f.fields||[]).forEach(([fk,l])=>kpiNames[fk]=(typeof l==="function"?l():l).replace(/ \(.*\)$/,"")));
   keys(a.kpi,b.kpi).forEach(k=>{ if((a.kpi||{})[k]!==(b.kpi||{})[k]) out.push(`${kpiNames[k]||k}: ${(b.kpi||{})[k]||"cleared"}`.slice(0,90)); });
   (b.carry||[]).forEach((c,i)=>{ const o=(a.carry||[])[i]; if(o && o.k===c.k){ if(o.status!==c.status) out.push(`Last visit's task ${c.code}: ${({done:"done",part:"partly done",not:"not done"})[c.status]||"unmarked"}`); else if(o.comment!==c.comment) out.push(`Comment on last visit's task ${c.code}`); } });
@@ -1480,12 +1487,13 @@ function rating(x){
   if(x>=80) return ["Needs improvement","r-ni"]; if(x>=70) return ["Poor","r-poor"]; return ["Critical","r-crit"];
 }
 function taskList(S=st){ return ITEMS.filter(x=>typeof S.s[x.k]==="number" && S.s[x.k]<4).map(x=>Object.assign({v:S.s[x.k]},x))
-  .concat((S.extra||[]).filter(o=>(o.text||"").trim()).map((o,i)=>({k:"x."+o.id, code:"OBS"+(i+1), text:o.text.trim(), sec:"Other things to fix (not on the checklist)", v:3, obs:true}))); }
+  .concat((S.extra||[]).filter(o=>(o.text||"").trim()).map((o,i)=>({k:"x."+o.id, code:"OBS"+(i+1), by:o.by||"am", text:o.text.trim(), sec:"Additional observations (not on the checklist)", v:3, obs:true}))); }
 function renderObs(){
   const L=st.extra||[]; $("obscount").textContent = L.length ? `${L.length} added` : "";
   $("obslist").innerHTML = L.map((o,i)=>{ const k="x."+o.id, key=kk(k), a=st.act[k]||{};
     return `<div class="card finding sev2 stack">
-      <div class="cardhead"><h3>Observation ${i+1}</h3><button type="button" class="iconbtn" data-delobs="${o.id}">Remove</button></div>
+      <div class="cardhead"><h3>Observation ${i+1} ${(o.by||"am")==="sm"?'<span class="pill r-mut">Normal priority</span>':'<span class="pill r-poor">High priority</span>'}</h3><button type="button" class="iconbtn" data-delobs="${o.id}">Remove</button></div>
+      <div class="byrow"><span class="tiny muted">Added by</span><div class="seg" role="group" aria-label="Who is adding this observation"><button type="button" data-xby="${o.id}" data-v="sm" aria-pressed="${(o.by||"am")==="sm"}">Store Manager</button><button type="button" data-xby="${o.id}" data-v="am" aria-pressed="${(o.by||"am")==="am"}">Area Manager</button></div></div>
       <label class="f" for="xt${key}">What did you find?<textarea id="xt${key}" data-xo="${o.id}" rows="2" placeholder="e.g. Broken shelf strip by the chillers, customer tripped last week">${esc(o.text||"")}</textarea></label>
       <div class="media" id="ph${key}">${mediaHtml(k)}</div>
       <label class="f" for="xa${key}">What the store manager must do<input type="text" id="xa${key}" data-ak="${k}" data-af="action" value="${esc(a.action||"")}" placeholder="e.g. Get it repaired and send a photo"></label>
@@ -1515,7 +1523,7 @@ function checkHtml(k, code, text, hint, cm){
 }
 // Who fills in each section: HR does the sales and profit sections (the store manager can't see them), the store manager does the rest.
 const SEC_OWNER = i => i<2 ? "HR" : "Store Manager";
-const ownerTag = o => `<span class="ownertag ${o==="HR"?"hr":"sm"}">Input: ${o}</span>`;
+const ownerTag = o => `<span class="ownertag ${o==="HR"?"hr":o==="Area Manager"?"am":"sm"}">Input: ${o}</span>`;
 function renderSections(){
   const cm = carryMap();
   $("sections").innerHTML = SECTIONS.map((s,i)=>`
@@ -1528,6 +1536,7 @@ function renderSections(){
      <div class="guidebox secinfo" id="gis${i}" hidden>${secInfoHtml(i)}</div>
      <div class="secbody">${s.c.map((c,j)=>checkHtml(id(i,j), `${i+1}.${j+1}`, c, "", cm)).join("")}</div>
    </div>`).join("");
+  $("secnav").innerHTML = SECTIONS.map((s,i)=>`<button type="button" data-secjump="${i}" class="${i<2?"privchip":""}"><span class="odot ${SEC_OWNER(i)==="HR"?"hr":"sm"}" aria-hidden="true"></span>${i+1}. ${esc(s.n.split(" & ")[0].split(",")[0])}</button>`).join("") + `<button type="button" data-jump="obsbox"><span class="odot am" aria-hidden="true"></span>Additional observations</button>`;
   $("opschecks").innerHTML = OPS.map((o,j)=>checkHtml("o."+j, "OP"+(j+1), o[0], o[1], cm)).join("");
   updateFigs(); hydrate();
 }
@@ -1609,6 +1618,8 @@ function renderFindings(){
 /* ---------- staff tasks ---------- */
 const BK = {t:"", c:""};
 const bucketOf = x => x.obs ? "obs" : (x.v<=1 ? "urgent" : "improve");
+const obsPill = x => obsHi(x) ? `<span class="pill r-poor">High priority · Area Manager</span>` : `<span class="pill r-ni">Observation · Store Manager</span>`;
+const obsRank = x => x.obs ? (obsHi(x) ? -2 : -1) : x.v;
 const BUCKETS = [["obs","Observations"],["urgent","Urgent, scored 0 or 1"],["improve","Improve, scored 2 or 3"]];
 function bucketBar(items, which){ const n={}, d={}; items.forEach(x=>{ n[x.b]=(n[x.b]||0)+1; if(x.done) d[x.b]=(d[x.b]||0)+1; });
   let cur=BK[which]; if(!n[cur]) cur=(BUCKETS.find(b=>n[b[0]])||BUCKETS[0])[0]; BK[which]=cur;
@@ -1623,9 +1634,9 @@ function renderTasks(){
   if(!onTasks && renderTasks.done) { renderCarryHead(); return; }
   renderTasks.done = true;
   const tb = bucketBar(t.map(x=>({b:bucketOf(x)})), "t");
-  $("tasklist").innerHTML = t.length ? tb.html + t.filter(x=>bucketOf(x)===tb.cur).sort((a,b)=>(a.obs?-1:a.v)-(b.obs?-1:b.v)).map(x=>{ const a=st.act[x.k]||{}; const key=kk(x.k);
-    return `<div class="card finding ${x.v<=1?"":x.v===2?"sev2":"sev3"} stack">
-      <div><span class="pill ${x.obs?"r-ni":x.v<=1?"r-poor":x.v===2?"r-ni":"r-mut"}">${x.obs?"Observation":"Scored "+x.v}</span> <span class="tiny muted">${x.obs?"":x.v===0?"Major: fix within 24 hours · ":x.v===1?"Significant: fix within 7 days or sooner · ":""}${esc(x.sec)}</span></div>
+  $("tasklist").innerHTML = t.length ? tb.html + t.filter(x=>bucketOf(x)===tb.cur).sort((a,b)=>obsRank(a)-obsRank(b)).map(x=>{ const a=st.act[x.k]||{}; const key=kk(x.k);
+    return `<div class="card finding ${(x.obs?obsHi(x):x.v<=1)?"":x.v===2||x.obs?"sev2":"sev3"} stack">
+      <div>${x.obs?obsPill(x):`<span class="pill ${x.v<=1?"r-poor":x.v===2?"r-ni":"r-mut"}">Scored ${x.v}</span>`} <span class="tiny muted">${x.obs?(obsHi(x)?"Fix within 24 hours · ":""):x.v===0?"Major: fix within 24 hours · ":x.v===1?"Significant: fix within 7 days or sooner · ":""}${esc(x.sec)}</span></div>
       <h3>${x.code} ${esc(x.text)}</h3>
       ${st.notes[x.k]?`<span class="muted">${esc(st.notes[x.k])}</span>`:""}
       ${(st.photos[x.k]||[]).length?`<div class="media">${thumbs(x.k,st,false)}</div>`:""}
@@ -1641,13 +1652,14 @@ function renderTasks(){
 }
 function renderCarryHead(){ const c=st.carry; const m=c.filter(x=>x.status).length; $("carrysum").textContent = c.length ? `${m} of ${c.length} checked` : ""; }
 const isPri = x => x.obs || (typeof x.v==="number" && x.v<=3);
-const isTop = x => x.obs || x.v===0;
+const obsHi = x => x.obs && x.by!=="sm";
+const isTop = x => obsHi(x) || x.v===0;
 const proofKey = x => x.k+"!p";
 function proofHtml(x){ const k=proofKey(x), ph=st.photos[k]||[], need=(x.status==="done"||x.status==="part") && !ph.length;
   return `<div class="proof"><div class="proofhead"><b>Proof it's fixed</b>${need?' <span class="needc">Add a photo to prove it</span>':ph.length?` <span class="tiny" style="color:var(--good);font-weight:600">${ph.length} photo${ph.length>1?"s":""} added</span>`:' <span class="tiny muted">Photo of the fix, added by whoever marks it</span>'}</div>${ph.length?`<div class="media">${thumbs(k)}</div>`:""}${photoLabel(k).replace("+ Add photo","+ Add proof photo")}</div>`; }
 function refreshFirst(){ if($("firstdlg").classList.contains("on") && firstCheck.list){ $("firstlist").innerHTML = firstCheck.list.map(i=>carryCard(st.carry[i],i,"fc")).join(""); hydrate(); applyLock(); } }
 function carryCard(x,i,pre){ return `<div class="card finding ${x.weeks>=3?"":x.status==="done"?"sev3":"sev2"} stack">
-      <div class="cardhead"><h3>${isPri(x)?`<span class="pill ${x.obs?"r-ni":x.v<=1?"r-poor":x.v===2?"r-ni":"r-mut"}">${x.obs?"Observation":"Scored "+x.v}</span> `:""}${esc(x.code)} ${esc(x.text)}</h3>${x.weeks>=3?`<span class="pill r-crit">Repeat failure, ${x.weeks} visits: escalate</span>`:x.weeks===2?`<span class="pill r-ni">2nd visit running</span>`:""}</div>
+      <div class="cardhead"><h3>${x.obs ? obsPill(x)+" " : isPri(x)?`<span class="pill ${x.v<=1?"r-poor":x.v===2?"r-ni":"r-mut"}">Scored ${x.v}</span> `:""}${esc(x.code)} ${esc(x.text)}</h3>${x.weeks>=3?`<span class="pill r-crit">Repeat failure, ${x.weeks} visits: escalate</span>`:x.weeks===2?`<span class="pill r-ni">2nd visit running</span>`:""}</div>
       <span class="tiny muted">Set ${fmtDate(x.from)} · ${x.obs?"observation":"scored "+x.v} · owner ${esc(x.owner||defOwner())} · due ${fmtDate(x.due)}</span>
       ${x.action?`<span>${esc(x.action)}</span>`:""}
       ${x.note?`<span class="muted">Found: ${esc(x.note)}</span>`:""}
@@ -1660,7 +1672,7 @@ function carryCard(x,i,pre){ return `<div class="card finding ${x.weeks>=3?"":x.
       </div>
       <input type="text" id="${pre}${i}" data-cn="${i}" value="${esc(x.comment||"")}" placeholder="${x.status==="part"||x.status==="not"?"Comment: what's still left to do?":"Comment (optional)"}" aria-label="Comment for ${esc(x.code)}">
     </div>`; }
-function carryOrder(){ return st.carry.map((x,i)=>i).sort((a,b)=>{ const A=st.carry[a],B=st.carry[b]; const pa=isPri(A)?0:1, pb=isPri(B)?0:1; if(pa!==pb) return pa-pb; const va=A.obs?-1:A.v, vb=B.obs?-1:B.v; return va-vb; }); }
+function carryOrder(){ return st.carry.map((x,i)=>i).sort((a,b)=>{ const A=st.carry[a],B=st.carry[b]; const pa=isPri(A)?0:1, pb=isPri(B)?0:1; if(pa!==pb) return pa-pb; return obsRank(A)-obsRank(B); }); }
 let firstShown=false;
 function firstCheck(force){
   const pend=carryOrder().filter(i=>isTop(st.carry[i]) && !st.carry[i].status);
@@ -1890,7 +1902,7 @@ function computeSum(S){
     ol:{orders:n0(S.ol.orders), issues:n0(S.ol.issues), notreached:n0(S.ol.notreached), missing:n0(S.ol.missing)}};
 }
 async function saveWeek(quiet, submit){
-  if(!OWNER()){ if(!quiet) toast("Only the owner can approve a visit."); return null; }
+  if(!OWNER()){ if(!quiet) toast("Only a super admin can approve a visit."); return null; }
   if(slot==="next"){ toast("Switch to the earlier week to approve it first."); return null; }
   if(blockIfMissing()) return null;
   const prev = weeks.find(x=>x.id===(st.date||today()));
@@ -1908,8 +1920,9 @@ async function saveWeek(quiet, submit){
 function draftApproved(){ const w=weeks.find(x=>x.id===draftDate); return !!(w && (w.approved||w.submitted)); }
 const canStartNext = () => role!=="viewer" && role!=="loading" && !nextDate && draftDate && today() >= plusDays(weekStart(draftDate),7);
 function renderSlotBar(){ const el=$("slotbar"); if(!el) return; document.body.classList.toggle("slot-next", slot==="next");
-  const ap=draftApproved();
-  let h=`<button type="button" class="slotbtn" data-slot="draft" aria-pressed="${slot==="draft"}"><b>${esc(wkRange(weekStart(draftDate)))}</b> <span>${ap?"Approved":"Draft, awaiting approval"}</span></button>`;
+  const ap=draftApproved(); const wd=weeks.find(x=>x.id===draftDate)||{}; const ds = slot==="draft" ? st : (lsGet(KEY)||{});
+  const chg = ap && (ds.updatedAt||0) > (wd.savedAt||0)+2000;
+  let h=`<button type="button" class="slotbtn" data-slot="draft" aria-pressed="${slot==="draft"}"><b>${esc(wkRange(weekStart(draftDate)))}</b> <span>${!ap?"Draft, awaiting approval":chg?"Changed since approval, awaiting approval":"Approved"}</span></button>`;
   if(nextDate) h+=`<button type="button" class="slotbtn" data-slot="next" aria-pressed="${slot==="next"}"><b>${esc(wkRange(weekStart(nextDate)))}</b> <span>Next week, draft</span></button>`;
   else if(canStartNext()) h+=`<button type="button" class="slotbtn new" id="slotnew">+ Start next week (${esc(wkRange(plusDays(weekStart(draftDate),7)))})</button>`;
   if(!ap && draftDate && today() >= plusDays(weekStart(draftDate),14)) h+=`<span class="slotwarn">The week of ${esc(wkRange(weekStart(draftDate)))} still needs ${OWNER()?"your":"the super admin's"} approval. No further week can start until it's approved.</span>`;
@@ -1938,7 +1951,7 @@ function buildCarry(S){
   const prev = S.carry||[]; const pm = carryMap(S); const tasks = taskList(S); const due = nextSat(S.date);
   const act=S.act||{}, notes=S.notes||{}, photos=S.photos||{}, sc=S.s||{};
   const carry = tasks.map(t=>{ const p=pm[t.k]; const a=act[t.k]||{};
-    return {k:t.k, code:t.code, text:t.text, v:t.v, note:notes[t.k]||"", action:a.action||"", owner:a.owner||defOwner(), due:a.due||due, weeks:p?(p.weeks||1)+1:1, obs:!!t.obs, from:S.date, photos:(photos[t.k]||[]).slice(0,3), status:""}; });
+    return {k:t.k, code:t.code, by:t.by, text:t.text, v:t.v, note:notes[t.k]||"", action:a.action||"", owner:a.owner||defOwner(), due:a.due||due, weeks:p?(p.weeks||1)+1:1, obs:!!t.obs, from:S.date, photos:(photos[t.k]||[]).slice(0,3), status:""}; });
   prev.forEach(c=>{ if(c.status==="done" || tasks.some(t=>t.k===c.k)) return; const v=sc[c.k]; if(v==="na" || (typeof v==="number" && v>=4)) return;
     carry.push(Object.assign({}, c, {weeks:(c.weeks||1)+1, status:"", comment:""})); });
   return carry;
@@ -1947,7 +1960,7 @@ function buildCarry(S){
 function mergeCarry(fresh, old){ const m={}; (old||[]).forEach(c=>m[c.k]=c);
   return fresh.map(c=>{ const o=m[c.k]; return o ? Object.assign({}, c, {status:o.status||"", comment:o.comment||""}) : c; }); }
 async function startNext(){
-  if(!OWNER()){ toast("Only the owner can approve and finish a visit."); return; }
+  if(!OWNER()){ toast("Only a super admin can approve and finish a visit."); return; }
   if(slot==="next"){ toast("Switch to the earlier week to approve it. Next week is approved after that."); return; }
   if(blockIfMissing()) return;
   await saveWeek(true, lockInfo().phase==="locked");
@@ -1992,7 +2005,7 @@ function renderMgmt(){
   const curK=new Set(cur.issues.map(x=>x.k)), prevK=new Set(prev?prev.issues.map(x=>x.k):[]);
   const fresh=cur.issues.filter(x=>!prevK.has(x.k)), still=cur.issues.filter(x=>prevK.has(x.k)), isOk=x=>cur.scores&&(cur.scores[x.k]==="na"||cur.scores[x.k]>=4); const fixed=prev?prev.issues.filter(isOk):[]; const unchecked=prev?prev.issues.filter(x=>!x.obs&&!curK.has(x.k)&&!isOk(x)):[];
   const delta = prev ? cur.total-prev.total : null;
-  const secOf = x => x.obs ? "Other things to fix" : ((ITEM[x.k]||{}).sec || "Other");
+  const secOf = x => x.obs ? "Additional observations" : ((ITEM[x.k]||{}).sec || "Other");
   const secNo = x => x.obs ? 99 : SECTIONS.findIndex(S=>S.n===secOf(x));
   const pic = x => (x.photos||[]).length ? `<div class="media" style="margin-top:4px">${x.photos.map((p,j)=>`<span class="thumb"><img ${imgSrc(p)} alt="Photo ${j+1}" data-view="1" loading="lazy"></span>`).join("")}</div>` : "";
   const item = (x, showScore) => `<li><b class="num">${esc(x.code)}</b> ${esc(x.text)}${showScore?(x.obs?` <span class="pill r-ni">Observation</span>`:` <span class="pill ${x.v<=1?"r-poor":x.v===2?"r-ni":"r-mut"}">${x.v===undefined?"":"Scored "+x.v}</span>`):""}${x.note?`<br><span class="tiny muted">${esc(x.note)}</span>`:""}${pic(x)}</li>`;
@@ -2164,7 +2177,7 @@ function rpQuick(q){ const t=today(); let a=t;
   $("rp_from").value=a; $("rp_to").value=t; rpInfo(); }
 function rpInfo(){ const L=rpWeeks(), all=weeks.filter(w=>{ const [a,b]=rpRange(); return w.id>=a&&w.id<=b; }).length; const el=$("rp_info"); if(!el) return;
   el.textContent = L.length ? `${L.length} approved week${L.length===1?"":"s"} in this range: ${L.map(w=>fmtDate(w.id)).join(", ")}.${all>L.length?` ${all-L.length} not approved yet, so left out.`:""}`
-    : `No approved weeks in this range${all?` (${all} saved but not approved)`:""}. Only weeks the owner has approved go into these reports.`; }
+    : `No approved weeks in this range${all?` (${all} saved but not approved)`:""}. Only weeks a super admin has approved go into these reports.`; }
 function rpOutcome(w, k){
   const nx = weeks.filter(x=>x.id>w.id).sort((x,y)=>x.id<y.id?-1:1)[0];
   let carry=null, draft=false;
@@ -2317,6 +2330,8 @@ document.addEventListener("click", e=>{
   const bk=e.target.closest("[data-bk]"); if(bk){ const [w,k]=bk.dataset.bk.split(":"); BK[w]=k; renderTasks.done=false; renderTasks(); return; }
   if(e.target.closest("#rating")){ const pop=$("ratepop"), open=pop.hidden; pop.hidden=!open; $("rating").setAttribute("aria-expanded", String(open)); return; }
   if(!$("ratepop").hidden && !e.target.closest("#ratepop")){ $("ratepop").hidden=true; $("rating").setAttribute("aria-expanded","false"); }
+  const sj=e.target.closest("[data-secjump]"); if(sj){ const i=+sj.dataset.secjump, sec=$("sec"+i); if(st.open!==i){ const h=sec.querySelector(".sechead"); h && h.click(); } setTimeout(()=>{ sec.scrollIntoView({block:"start"}); window.scrollBy(0,-topH()-8); },60); return; }
+  const xb=e.target.closest("[data-xby]"); if(xb){ const o=(st.extra||[]).find(x=>x.id===xb.dataset.xby); if(o){ o.by=xb.dataset.v; save(); renderObs(); renderTasks.done=false; renderTasks(); renderFindings(); } return; }
   const rm=e.target.closest("[data-rmk]");
   if(rm){ const k=rm.dataset.rmk; (st.photos[k]||[]).splice(+rm.dataset.rmi,1); save(); renderMedia(k); renderFindings(); if(k.endsWith("!p")){ renderTasks.done=false; renderTasks(); refreshFirst(); } toast("Photo removed."); return; }
   const im=e.target.closest("img[data-view]");
@@ -2390,10 +2405,10 @@ $("addcnt").addEventListener("click", ()=>{
   st.pur.counts.push({line, sys:$("ss").value, cnt:$("sc").value, cost:$("su").value});
   ["sl","ss","sc","su"].forEach(k=>$(k).value=""); save(); renderPur(false); $("sl").focus();
 });
-$("addobs").addEventListener("click", ()=>{ const o={id:Date.now().toString(36)+Math.random().toString(36).slice(2,5), text:""}; st.extra.push(o); save(); renderObs(); const ta=$("xt"+kk("x."+o.id)); if(ta) ta.focus(); });
+$("addobs").addEventListener("click", ()=>{ const o={id:Date.now().toString(36)+Math.random().toString(36).slice(2,5), text:"", by: role==="team" ? "sm" : "am"}; st.extra.push(o); save(); renderObs(); const ta=$("xt"+kk("x."+o.id)); if(ta) ta.focus(); });
 $("copytasks").addEventListener("click", ()=>copyText(taskText(),"tasktext","Task list copied. Paste it into the team chat."));
 $("copy").addEventListener("click", ()=>copyText(report(),"reporttext","Report copied. Paste it into an email or chat."));
-$("showreport").addEventListener("click", ()=>{ const ta=$("reporttext"); ta.value=report(); ta.hidden=!ta.hidden; });
+
 $("saveweek").addEventListener("click", async ()=>{ const w=await saveWeek(false); if(w) logEvent(`Approved the visit of ${fmtDate(w.id)}`); applyLock(); });
 $("reset").addEventListener("click", ()=>{ const n=taskList().length; $("confirmtext").textContent = (lockInfo().phase!=="locked" ? `The edit window for this visit is still open (${$("locktext").textContent}). Finishing now closes it early. ` : "") + `This saves the week of ${fmtDate(st.date)} to your history, turns ${n} score${n===1?"":"s"} below 4 into tasks for next week and starts a fresh checklist.`; $("confirm").classList.add("on"); });
 $("cancelreset").addEventListener("click", ()=>$("confirm").classList.remove("on"));
