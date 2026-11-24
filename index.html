@@ -970,7 +970,7 @@ function applyLock(){
   document.querySelectorAll('label.notebtn[for^="pf"]').forEach(l=>{ l.hidden=!ed; });
   const rl=document.querySelector('label[for="restore"]'); if(rl) rl.hidden=!(OWNER()&&ed);
   ["addobs","addpur","addcnt"].forEach(i=>{ const b=$(i); if(b) b.hidden=!ed; });
-  const [txt,cls,label] = L.phase==="open" ? [`Team can edit until ${fmtWhen(L.t1)}`,"r-good","Open"]
+  const [txt,cls,label] = L.phase==="open" ? [`Edit window ${fmtWhen(L.t1)}`,"r-good","Open"]
     : L.phase==="admin" ? [`Team editing closed. Super admin only until ${fmtWhen(L.t2)}`,"r-ni","Super admin only"]
     : [`Editing closed ${isNaN(L.t2)?"":fmtWhen(L.t2)}. Waiting for a super admin's approval`,"r-mut","Closed"];
   const setT=(e,v)=>{ if(e && e.textContent!==v) e.textContent=v; };
