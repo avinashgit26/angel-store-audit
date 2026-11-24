@@ -434,6 +434,8 @@ h2.hh{display:flex;align-items:center;gap:9px}
 .secarr{flex:0 0 auto;width:30px;height:30px;border-radius:50%;border:1px solid var(--line);background:var(--card);color:var(--accent);font-size:20px;line-height:1;display:grid;place-items:center;cursor:pointer;box-shadow:0 1px 4px rgba(20,26,51,.08);margin-bottom:8px}
 .secarr:hover{background:var(--accent-soft)}
 .secarr:disabled{opacity:.3;cursor:default}
+.fbrow{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:2px 0 6px}
+.secbody>.fbrow{padding:4px 2px 2px}
 </style>
 <style>
 /* ---------- dashboard layout ---------- */
@@ -556,17 +558,19 @@ body:not([data-role]) .panel{visibility:hidden}
 
     <div class="sec stripe" id="opsbox" data-fold>
       <div class="sechead">
-        <h3>Operations checks <button type="button" class="infobtn" data-info="ops" aria-label="About the operations checks" aria-expanded="false">i</button> <span class="ownertag hr" title="HR fills this in">HR</span></h3>
+        <h3>Operations checks <button type="button" class="infobtn" data-info="ops" aria-label="About the operations checks" aria-expanded="false">i</button> <span class="ownertag hr" title="HR or the Operations manager fills this in">HR/Ops</span></h3>
         <span class="secscore num" id="opsscore"></span>
         <span class="secsub"><span class="progress"><i id="opsprog"></i></span><span class="tiny muted num" id="opsdone"></span></span>
       </div>
       <div class="guidebox secinfo" id="giops" hidden><div><b>What this covers:</b> day-to-day running checks that sit outside the 100-point audit: keys, screens, daily sales record, purchases and promotions.</div><div><b>How to score:</b> score each check 0 to 4 on what you see at the visit and in the records for the audit week. Use N/A only when the check can't apply. Any 0, 1, 2 or N/A needs a comment.</div><div><b>Score:</b> shown separately as a percentage, so it doesn't change the audit score.</div></div>
+      <div class="fbrow" data-fbk="ops"></div>
       <div class="secbody" id="opschecks"></div>
     </div>
 
     <div class="card stack" id="ops-dsr" data-fold>
-      <div class="cardhead"><h2>Daily sales record <button type="button" class="infobtn" data-info="dsr" aria-label="About Daily sales record" aria-expanded="false">i</button> <span class="ownertag hr" title="HR fills this in">HR</span></h2><span class="tiny muted num" id="dsrdays"></span></div>
+      <div class="cardhead"><h2>Daily sales record <button type="button" class="infobtn" data-info="dsr" aria-label="About Daily sales record" aria-expanded="false">i</button> <span class="ownertag hr" title="HR or the Operations manager fills this in">HR/Ops</span></h2><span class="tiny muted num" id="dsrdays"></span></div>
       <div class="guidebox secinfo" id="gidsr" hidden><div><b>What this covers:</b> the store's daily sales record for each day of the audit week, Monday to Sunday.</div><div><b>How to fill it in:</b> HR checks every day's record, then ticks the box. Note anything wrong: missing days, figures that don't match the till reports, or unexplained cash differences.</div></div>
+      <div class="fbrow" data-fbk="dsr"></div>
       <p class="tiny muted" style="margin:0">Completed by HR. Tick when the daily sales record has been checked for the week and note any issues found.</p>
       <label class="chk" for="dsr_done"><input type="checkbox" id="dsr_done"><span>Daily sales record checked for every day of the audit week (Monday to Sunday)</span></label>
       <label class="f" for="dsr_issues">Issues found (till variances, missing days, refunds, anything unusual)<textarea id="dsr_issues" rows="3" placeholder="e.g. Tuesday till 2 short by £12.40, no Z-read on Thursday"></textarea></label>
@@ -574,8 +578,9 @@ body:not([data-role]) .panel{visibility:hidden}
     </div>
 
     <div class="card stack" id="ops-online" data-fold>
-      <div class="cardhead"><h2>Online orders in the audit week <button type="button" class="infobtn" data-info="ol" aria-label="About Online orders" aria-expanded="false">i</button> <span class="ownertag hr" title="HR fills this in">HR</span></h2><span class="tiny muted">Deliveroo, Just Eat and own website</span></div>
+      <div class="cardhead"><h2>Online orders in the audit week <button type="button" class="infobtn" data-info="ol" aria-label="About Online orders" aria-expanded="false">i</button> <span class="ownertag hr" title="HR or the Operations manager fills this in">HR/Ops</span></h2><span class="tiny muted">Deliveroo, Just Eat and own website</span></div>
       <div class="guidebox secinfo" id="giol" hidden><div><b>What this covers:</b> orders from Deliveroo, Just Eat and the store's own website during the audit week.</div><div><b>How to fill it in:</b> take the numbers from each platform's weekly report. Enter orders received, orders with issues, orders that didn't reach the customer, and items missing. The KPI table works out the rates automatically.</div></div>
+      <div class="fbrow" data-fbk="ol"></div>
       <div class="grid3">
         <label class="f" for="ol_orders">Orders received<input type="number" min="0" inputmode="numeric" id="ol_orders" data-ol="orders"></label>
         <label class="f" for="ol_issues">Orders with a problem<input type="number" min="0" inputmode="numeric" id="ol_issues" data-ol="issues"></label>
@@ -589,8 +594,9 @@ body:not([data-role]) .panel{visibility:hidden}
     </div>
 
     <div class="card stack" id="ops-inv" data-fold>
-      <div class="cardhead"><h2>Daily purchases: Store and Cash &amp; Carry <button type="button" class="infobtn" data-info="inv" aria-label="About Daily purchases" aria-expanded="false">i</button> <span class="ownertag hr" title="HR fills this in">HR</span></h2><span class="tiny muted num" id="invcount"></span></div>
+      <div class="cardhead"><h2>Daily purchases: Store and Cash &amp; Carry <button type="button" class="infobtn" data-info="inv" aria-label="About Daily purchases" aria-expanded="false">i</button> <span class="ownertag hr" title="HR or the Operations manager fills this in">HR/Ops</span></h2><span class="tiny muted num" id="invcount"></span></div>
       <div class="guidebox secinfo" id="giinv" hidden><div><b>What this covers:</b> what the store bought each day, split into Store purchases (deliveries to the shop) and Cash &amp; Carry, Monday to Sunday.</div><div><b>How to fill it in:</b> enter each day's total from the invoices and receipts, excluding VAT. The weekly total and budget check below update automatically.</div></div>
+      <div class="fbrow" data-fbk="inv"></div>
       <label class="f" for="purweek" style="max-width:260px">Week starting (Monday)<input type="date" id="purweek"></label>
       <div class="purgrid">
         <div class="tablewrap"><table class="ptable" id="pt_store"></table></div>
@@ -601,8 +607,9 @@ body:not([data-role]) .panel{visibility:hidden}
     </div>
 
     <div class="card stack" id="ops-pur" data-fold>
-      <div class="cardhead"><h2>Weekly purchases <button type="button" class="infobtn" data-info="pur" aria-label="About Weekly purchases" aria-expanded="false">i</button> <span class="ownertag hr" title="HR fills this in">HR</span></h2><span class="pill" id="purstatus"></span></div>
+      <div class="cardhead"><h2>Weekly purchases <button type="button" class="infobtn" data-info="pur" aria-label="About Weekly purchases" aria-expanded="false">i</button> <span class="ownertag hr" title="HR or the Operations manager fills this in">HR/Ops</span></h2><span class="pill" id="purstatus"></span></div>
       <div class="guidebox secinfo" id="gipur" hidden><div><b>What this covers:</b> the week's total purchases against the weekly budget, set at &pound;25,000 unless a super admin changes it.</div><div><b>How it works:</b> week total = Store + Cash &amp; Carry purchases for Monday to Sunday. Budget used % = week total &divide; budget &times; 100. If the week goes over budget, write the reason; it appears in the management report.</div></div>
+      <div class="fbrow" data-fbk="pur"></div>
       <div class="grid2">
         <label class="f" for="budget">Weekly purchase budget (£, ex VAT)<input type="number" min="0" step="any" inputmode="decimal" id="budget"></label>
       </div>
@@ -1625,8 +1632,15 @@ function checkHtml(k, code, text, hint, cm){
   </div>`;
 }
 // Who fills in each section: HR does the sales and profit sections (the store manager can't see them), the store manager does the rest.
-const SEC_OWNER = i => i<2 ? "HR" : "Store Manager";
-const ownerTag = o => `<span class="ownertag ${o==="HR"?"hr":o==="Area Manager"?"am":"sm"}" title="${o} fills this in">${o}</span>`;
+const SEC_OWNER = i => i<2 ? "HR/Ops" : "Store Manager";
+const ownerTag = o => `<span class="ownertag ${o==="HR/Ops"?"hr":o==="Area Manager"?"am":"sm"}" title="${o==="HR/Ops"?"HR or the Operations manager":o} fills this in">${o}</span>`;
+const FB_LABEL = {hr:"HR", ops:"Operations manager"};
+function renderFillBy(){
+  const fb = st.fillBy || {}, ed = canEditNow();
+  document.querySelectorAll("[data-fbk]").forEach(el=>{ const k=el.dataset.fbk, v=fb[k]||"";
+    const h = `<span class="tiny muted">Filled in by</span><div class="seg segsm" role="group" aria-label="Job role of the person filling this in">${["hr","ops"].map(r=>`<button type="button" data-fb="${k}" data-v="${r}" aria-pressed="${v===r}"${ed?"":" disabled"}>${FB_LABEL[r]}</button>`).join("")}</div>${v?"":`<span class="tiny muted">Pick your job role</span>`}`;
+    if(el.innerHTML!==h) el.innerHTML=h; });
+}
 function renderSections(){
   const cm = carryMap();
   $("sections").innerHTML = SECTIONS.map((s,i)=>`
@@ -1637,9 +1651,10 @@ function renderSections(){
        <span class="secsub"><span class="progress"><i id="sp${i}"></i></span><span class="tiny muted num" id="sd${i}"></span></span>
      </div>
      <div class="guidebox secinfo" id="gis${i}" hidden>${secInfoHtml(i)}</div>
-     <div class="secbody">${s.c.map((c,j)=>checkHtml(id(i,j), `${i+1}.${j+1}`, c, "", cm)).join("")}</div>
+     <div class="secbody">${i<2?`<div class="fbrow" data-fbk="s${i}"></div>`:""}${s.c.map((c,j)=>checkHtml(id(i,j), `${i+1}.${j+1}`, c, "", cm)).join("")}</div>
    </div>`).join("");
-  $("secnav").innerHTML = SECTIONS.map((s,i)=>`<button type="button" data-secjump="${i}" class="${i<2?"privchip":""}"><span class="odot ${SEC_OWNER(i)==="HR"?"hr":"sm"}" aria-hidden="true"></span>${i+1}. ${esc(s.n.split(" & ")[0].split(",")[0])}</button>`).join("") + `<button type="button" data-jump="obsbox"><span class="odot am" aria-hidden="true"></span>Additional observations</button>`;
+  renderFillBy();
+  $("secnav").innerHTML = SECTIONS.map((s,i)=>`<button type="button" data-secjump="${i}" class="${i<2?"privchip":""}"><span class="odot ${SEC_OWNER(i)==="HR/Ops"?"hr":"sm"}" aria-hidden="true"></span>${i+1}. ${esc(s.n.split(" & ")[0].split(",")[0])}</button>`).join("") + `<button type="button" data-jump="obsbox"><span class="odot am" aria-hidden="true"></span>Additional observations</button>`;
   $("opschecks").innerHTML = OPS.map((o,j)=>checkHtml("o."+j, "OP"+(j+1), o[0], o[1], cm)).join("");
   updateFigs(); hydrate();
 }
@@ -1662,7 +1677,7 @@ const periodOf = t => { const h=parseInt(String(t||"").slice(0,2),10); return is
 const visitLabel = S => S.time ? `${S.time} (${(S.visit||periodOf(S.time)).toLowerCase()})` : (S.visit||"");
 function brandSub(){ const bs=$("brandsub"); if(bs){ const v=`${st.store||"Angel Supermarket"} · Audit week ${wk()} · visited ${fmtDate(st.date)}${st.time?" at "+st.time:" ("+(st.visit||"Day").toLowerCase()+")"}`; if(bs.textContent!==v) bs.textContent=v; }
   const aw=$("auditweek"); if(aw){ const h=`<b>Audit week: Monday to Sunday, ${wk()}.</b> Score what happened in the store during those 7 days. Sales, purchases, the daily sales record and online orders all cover the same week. The visit itself is on ${fmtDate(st.date)}.`; if(aw.innerHTML!==h) aw.innerHTML=h; } }
-function refresh(){
+function refresh(){ try{ renderFillBy(); }catch(e){}
   brandSub();
   let total=0, done=0;
   SECTIONS.forEach((s,i)=>{ const r=secCalc(i); total+=r.score; done+=r.done;
@@ -2447,6 +2462,7 @@ document.addEventListener("click", e=>{
   if(e.target.closest("#rating")){ const pop=$("ratepop"), open=pop.hidden; pop.hidden=!open; $("rating").setAttribute("aria-expanded", String(open)); return; }
   if(!$("ratepop").hidden && !e.target.closest("#ratepop")){ $("ratepop").hidden=true; $("rating").setAttribute("aria-expanded","false"); }
   const sj=e.target.closest("[data-secjump]"); if(sj){ const i=+sj.dataset.secjump, sec=$("sec"+i); if(st.open!==i){ const h=sec.querySelector(".sechead"); h && h.click(); } setTimeout(()=>{ sec.scrollIntoView({block:"start"}); window.scrollBy(0,-topH()-8); },60); return; }
+  const fbb=e.target.closest("[data-fb]"); if(fbb){ if(!canEditNow()) return; st.fillBy = st.fillBy || {}; st.fillBy[fbb.dataset.fb] = fbb.dataset.v; save(); renderFillBy(); return; }
   const xp=e.target.closest("[data-xpri]"); if(xp){ const o=(st.extra||[]).find(x=>x.id===xp.dataset.xpri); if(o){ o.pri=xp.checked?"high":"normal"; save(); renderObs(); renderTasks.done=false; renderTasks(); renderFindings(); } return; }
   const xb=e.target.closest("[data-xby]"); if(xb){ const o=(st.extra||[]).find(x=>x.id===xb.dataset.xby); if(o){ o.by=xb.dataset.v; save(); renderObs(); renderTasks.done=false; renderTasks(); renderFindings(); } return; }
   const rm=e.target.closest("[data-rmk]");
@@ -2577,7 +2593,7 @@ function init(){
   document.querySelectorAll("#visit button").forEach(b=>b.setAttribute("aria-pressed", b.dataset.v===st.visit));
   renderTasks.done=false;
   fillMailInputs();
-  quiet=true; try{ renderSections(); renderObs(); renderKpiInputs(); renderDsr(); renderOl(); renderPurDaily(true); renderPur(true); refresh(); } finally { quiet=false; }
+  quiet=true; try{ renderSections(); renderObs(); renderKpiInputs(); renderDsr(); renderOl(); renderPurDaily(true); renderPur(true); renderFillBy(); refresh(); } finally { quiet=false; }
   setTimeout(()=>firstCheck(),600); renderSlotBar();
 }
 setupFolds();
