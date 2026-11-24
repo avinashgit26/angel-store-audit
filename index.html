@@ -379,6 +379,33 @@ details summary{cursor:pointer;color:var(--accent);font-weight:600;font-size:13.
 .listplain li{margin:3px 0}
 .actions.oneline{flex-wrap:nowrap;overflow-x:auto}.actions.oneline .btn{white-space:nowrap;flex:0 0 auto}
 @media (max-width:640px){.actions.oneline{flex-wrap:wrap}}
+
+/* --- livelier management report --- */
+#p-report .purtiles>div{border-left:4px solid var(--pc);background:color-mix(in srgb,var(--pc) 8%,var(--card))}
+#p-report .purtiles>div:nth-child(1){--pc:var(--accent)}#p-report .purtiles>div:nth-child(2){--pc:var(--amber)}#p-report .purtiles>div:nth-child(3){--pc:#7c3aed}#p-report .purtiles>div:nth-child(4){--pc:var(--good)}
+#p-report .purtiles>div:has(b.bad){--pc:var(--bad)}
+
+#p-report.on{background:radial-gradient(1200px 400px at 100% 0,color-mix(in srgb,var(--accent) 9%,transparent),transparent),radial-gradient(900px 400px at 0 100%,color-mix(in srgb,#c2185b 6%,transparent),transparent);border-radius:14px}
+.rhero{grid-column:1/-1;position:relative;border-radius:14px;overflow:hidden;min-height:150px;display:flex;align-items:flex-end;padding:20px 22px;color:#fff;background:#1b2fb3 url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%201200%20220%22%20preserveAspectRatio%3D%22xMidYMid%20slice%22%3E%20%3Cdefs%3E%3ClinearGradient%20id%3D%22g%22%20x1%3D%220%22%20y1%3D%220%22%20x2%3D%221%22%20y2%3D%221%22%3E%3Cstop%20offset%3D%220%22%20stop-color%3D%22%231b2fb3%22/%3E%3Cstop%20offset%3D%22.6%22%20stop-color%3D%22%233b2bb8%22/%3E%3Cstop%20offset%3D%221%22%20stop-color%3D%22%23c2185b%22/%3E%3C/linearGradient%3E%20%3Cpattern%20id%3D%22p%22%20width%3D%2260%22%20height%3D%2260%22%20patternUnits%3D%22userSpaceOnUse%22%3E%3Ccircle%20cx%3D%228%22%20cy%3D%228%22%20r%3D%221.6%22%20fill%3D%22%23fff%22%20fill-opacity%3D%22.14%22/%3E%3Ccircle%20cx%3D%2238%22%20cy%3D%2238%22%20r%3D%221.2%22%20fill%3D%22%23fff%22%20fill-opacity%3D%22.1%22/%3E%3C/pattern%3E%3C/defs%3E%20%3Crect%20width%3D%221200%22%20height%3D%22220%22%20fill%3D%22url%28%23g%29%22/%3E%3Crect%20width%3D%221200%22%20height%3D%22220%22%20fill%3D%22url%28%23p%29%22/%3E%20%3Ccircle%20cx%3D%221080%22%20cy%3D%22-20%22%20r%3D%22170%22%20fill%3D%22%23fff%22%20fill-opacity%3D%22.06%22/%3E%3Ccircle%20cx%3D%22880%22%20cy%3D%22250%22%20r%3D%22120%22%20fill%3D%22%23ffb020%22%20fill-opacity%3D%22.12%22/%3E%20%3Cg%20fill%3D%22none%22%20stroke%3D%22%23fff%22%20stroke-opacity%3D%22.28%22%20stroke-width%3D%223%22%20stroke-linejoin%3D%22round%22%3E%20%3Cpath%20d%3D%22M760%20200V96h360v104%22/%3E%3Cpath%20d%3D%22M745%2096l25-40h340l25%2040z%22/%3E%3Cpath%20d%3D%22M745%2096q22%2022%2045%200q22%2022%2045%200q22%2022%2045%200q22%2022%2045%200q22%2022%2045%200q22%2022%2045%200q22%2022%2045%200q22%2022%2045%200q22%2022%2045%200%22/%3E%20%3Crect%20x%3D%22790%22%20y%3D%22128%22%20width%3D%22120%22%20height%3D%2272%22/%3E%3Crect%20x%3D%22940%22%20y%3D%22128%22%20width%3D%22150%22%20height%3D%2250%22/%3E%3Cpath%20d%3D%22M850%20128v72%22/%3E%20%3Cpath%20d%3D%22M955%20150h30M995%20150h30M1035%20150h40M955%20165h50M1015%20165h55%22/%3E%3C/g%3E%20%3Cg%20fill%3D%22%23fff%22%20fill-opacity%3D%22.22%22%3E%3Crect%20x%3D%22960%22%20y%3D%22138%22%20width%3D%2210%22%20height%3D%2212%22%20rx%3D%222%22/%3E%3Crect%20x%3D%22975%22%20y%3D%22134%22%20width%3D%228%22%20height%3D%2216%22%20rx%3D%222%22/%3E%3Crect%20x%3D%221000%22%20y%3D%22140%22%20width%3D%2214%22%20height%3D%2210%22%20rx%3D%222%22/%3E%3Crect%20x%3D%221040%22%20y%3D%22136%22%20width%3D%2210%22%20height%3D%2214%22%20rx%3D%222%22/%3E%3Crect%20x%3D%221055%22%20y%3D%22139%22%20width%3D%2212%22%20height%3D%2211%22%20rx%3D%222%22/%3E%3C/g%3E%20%3Cg%20fill%3D%22none%22%20stroke%3D%22%23fff%22%20stroke-opacity%3D%22.2%22%20stroke-width%3D%222.5%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%20transform%3D%22translate%28660%20150%29%20scale%281.6%29%22%3E%20%3Ccircle%20cx%3D%229%22%20cy%3D%2220%22%20r%3D%221.5%22/%3E%3Ccircle%20cx%3D%2218%22%20cy%3D%2220%22%20r%3D%221.5%22/%3E%3Cpath%20d%3D%22M2%203h3l2.7%2012.4a2%202%200%200%200%202%201.6h7.6a2%202%200%200%200%202-1.6L21%207H6%22/%3E%3C/g%3E%20%3Ctext%20x%3D%22830%22%20y%3D%2286%22%20font-family%3D%22Arial%2Csans-serif%22%20font-weight%3D%22700%22%20font-size%3D%2222%22%20fill%3D%22%23fff%22%20fill-opacity%3D%22.55%22%20letter-spacing%3D%224%22%3EANGEL%3C/text%3E%20%3C/svg%3E") center/cover no-repeat;box-shadow:0 6px 20px rgba(27,47,179,.22)}
+.rhero-txt{position:relative;display:flex;flex-direction:column;gap:6px;max-width:62%}
+.rhero h1{margin:0;font-family:var(--display);font-size:28px;line-height:1.1;color:#fff}
+.rhero-k{font-size:12px;letter-spacing:.06em;text-transform:uppercase;opacity:.85}
+.rhero-meta{display:flex;flex-wrap:wrap;gap:6px}
+.rhero-meta span{background:rgba(255,255,255,.16);border:1px solid rgba(255,255,255,.28);border-radius:999px;padding:3px 10px;font-size:12.5px;backdrop-filter:blur(2px)}
+.rhero-meta b{font-weight:700}
+@media (max-width:640px){.rhero-txt{max-width:100%}.rhero h1{font-size:23px}}
+#p-report .card{border-top:3px solid var(--hc,var(--line));box-shadow:0 2px 10px rgba(20,26,51,.05)}
+h2.hh{display:flex;align-items:center;gap:9px}
+.hic{display:inline-grid;place-items:center;width:30px;height:30px;border-radius:9px;flex:0 0 auto;background:color-mix(in srgb,var(--hc) 14%,transparent);color:var(--hc)}
+.hic svg{width:17px;height:17px}
+.c1{--hc:#1b2fb3}.c2{--hc:#7c3aed}.c3{--hc:#0e8a7d}.c4{--hc:#d97706}.c5{--hc:#db2777}.c6{--hc:#dc2626}
+#p-report .card:has(> .cardhead .c1){--hc:#1b2fb3}#p-report .card:has(> .cardhead .c2){--hc:#7c3aed}#p-report .card:has(> .cardhead .c3){--hc:#0e8a7d}#p-report .card:has(> .cardhead .c4){--hc:#d97706}#p-report .card:has(> .cardhead .c5){--hc:#db2777}#p-report .card:has(> .cardhead .c6){--hc:#dc2626}
+#mgmttiles .tile{position:relative;padding:12px 12px 12px 52px;background:color-mix(in srgb,var(--tc,var(--accent)) 8%,var(--card));border:1px solid color-mix(in srgb,var(--tc,var(--accent)) 22%,transparent)}
+#mgmttiles .tile .tic{position:absolute;left:12px;top:12px;width:30px;height:30px;border-radius:50%;display:grid;place-items:center;background:var(--tc,var(--accent));color:#fff}
+#mgmttiles .tile .tic svg{width:16px;height:16px}
+.t-good{--tc:var(--good)}.t-amber{--tc:var(--amber)}.t-bad{--tc:var(--bad)}.t-info{--tc:var(--accent)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .c1,:root:not([data-theme="light"]) #p-report .card:has(> .cardhead .c1){--hc:#8c9bff}}
+:root[data-theme="dark"] .c1,:root[data-theme="dark"] #p-report .card:has(> .cardhead .c1){--hc:#8c9bff}
 </style>
 <style>
 /* ---------- dashboard layout ---------- */
@@ -670,38 +697,45 @@ body:not([data-role]) .panel{visibility:hidden}
 
   <!-- MANAGEMENT REPORT -->
   <section class="panel stack" id="p-report" role="tabpanel" aria-labelledby="t-report">
+    <div class="rhero" role="img" aria-label="Angel Supermarket management report banner">
+      <div class="rhero-txt">
+        <span class="rhero-k">Angel Supermarket · weekly store audit</span>
+        <h1>Management report</h1>
+        <div class="rhero-meta" id="rheromt"></div>
+      </div>
+    </div>
     <div class="card stack">
-      <div class="cardhead"><h2>At a glance</h2><span class="tiny muted" id="wkcount"></span></div>
+      <div class="cardhead"><h2 class="hh"><span class="hic c1"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 14l4-4"/><path d="M3.3 19a10 10 0 1 1 17.4 0"/><circle cx="12" cy="14" r="1.5"/></svg></span>At a glance</h2><span class="tiny muted" id="wkcount"></span></div>
       <label class="chk" for="inccur"><input type="checkbox" id="inccur" checked><span>Include this visit (not approved yet)</span></label>
       <div id="mgmtempty"></div>
       <div class="stack" id="mgmttiles"></div>
     </div>
     <div class="card stack half">
-      <div class="cardhead"><h2>Score trend</h2></div>
+      <div class="cardhead"><h2 class="hh"><span class="hic c2"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 17l6-6 4 4 8-8"/><path d="M15 7h6v6"/></svg></span>Score trend</h2></div>
       <div id="scorechart"></div>
     </div>
     <div class="card stack half">
-      <div class="cardhead"><h2>Week by week</h2></div>
+      <div class="cardhead"><h2 class="hh"><span class="hic c3"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 9h18M8 2v4M16 2v4"/></svg></span>Week by week</h2></div>
       <div class="tablewrap nohead" id="mgmttable"></div>
     </div>
     <div class="card stack">
-      <div class="cardhead"><h2>Purchases against budget</h2></div>
+      <div class="cardhead"><h2 class="hh"><span class="hic c4"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="20" r="1.5"/><circle cx="18" cy="20" r="1.5"/><path d="M2 3h3l2.7 12.4a2 2 0 0 0 2 1.6h7.6a2 2 0 0 0 2-1.6L21 7H6"/></svg></span>Purchases against budget</h2></div>
       <div class="stack nohead" id="mgmtpur"></div>
     </div>
     <div class="card stack" data-fold>
-      <div class="cardhead"><h2>Weekly KPI figures</h2></div>
+      <div class="cardhead"><h2 class="hh"><span class="hic c5"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1"/></svg></span>Weekly KPI figures</h2></div>
       <div id="kpitable"></div>
     </div>
     <div class="card stack" data-fold>
-      <div class="cardhead"><h2>Issues: new, still open and fixed</h2></div>
+      <div class="cardhead"><h2 class="hh"><span class="hic c6"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10.3 3.9L1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/><path d="M12 9v4M12 17h.01"/></svg></span>Issues: new, still open and fixed</h2></div>
       <div class="stack" id="mgmtcompare"></div>
     </div>
     <div class="card stack" data-fold>
-      <div class="cardhead"><h2>Section results over time</h2></div>
+      <div class="cardhead"><h2 class="hh"><span class="hic c2"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2l10 5-10 5L2 7z"/><path d="M2 17l10 5 10-5M2 12l10 5 10-5"/></svg></span>Section results over time</h2></div>
       <div class="tablewrap nohead" id="mgmtheat"></div>
     </div>
     <div class="card stack" data-fold>
-      <div class="cardhead"><h2>Download reports by date</h2></div>
+      <div class="cardhead"><h2 class="hh"><span class="hic c3"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5M12 15V3"/></svg></span>Download reports by date</h2></div>
       <p class="tiny muted" style="margin:0">Pick the visit dates to cover. Only weeks a super admin has approved are included. The PDF-ready files open in any browser: choose Print, then Save as PDF. The CSV files open in Excel.</p>
       <div class="grid2">
         <label class="f" for="rp_from">From<input type="date" id="rp_from"></label>
@@ -728,7 +762,7 @@ body:not([data-role]) .panel{visibility:hidden}
       </div>
     </div>
     <div class="card stack" data-fold>
-      <div class="cardhead"><h2>Email the report to management</h2></div>
+      <div class="cardhead"><h2 class="hh"><span class="hic c1"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M22 6l-10 7L2 6"/></svg></span>Email the report to management</h2></div>
       <p class="tiny muted" style="margin:0">Up to four people. The page gets the email ready with the week-on-week report. Send it from your own email.</p>
       <div class="grid2">
         <label class="f" for="mg_e1">Email 1<input type="email" id="mg_e1" data-mg="0" autocomplete="off"></label>
@@ -740,7 +774,7 @@ body:not([data-role]) .panel{visibility:hidden}
       <div class="stack" id="mail_mg_out" hidden></div>
     </div>
     <div class="card stack" data-fold>
-      <div class="cardhead"><h2>Share and back up</h2></div>
+      <div class="cardhead"><h2 class="hh"><span class="hic c5"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="M8.6 13.5l6.8 4M15.4 6.5l-6.8 4"/></svg></span>Share and back up</h2></div>
       <div class="actions">
         <button class="btn" type="button" id="copymgmt">Copy management report</button>
         <button class="btn ghost" type="button" id="dlmgmt">Download report</button>
@@ -2039,6 +2073,8 @@ function scoreSvg(d){
 function renderMgmt(){
   renderKpiTable(); renderSlotBar(); const d=mgmtSeries();
   $("wkcount").textContent = `${weeks.length} week${weeks.length===1?"":"s"} saved`;
+  const RIC={"star": "<svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M12 2l3.1 6.3 6.9 1-5 4.9 1.2 6.8L12 17.8 5.8 21l1.2-6.8-5-4.9 6.9-1z\"/></svg>", "cog": "<svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6z\"/><path d=\"M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z\"/></svg>", "alert": "<svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M10.3 3.9L1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z\"/><path d=\"M12 9v4M12 17h.01\"/></svg>", "bug": "<svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M9 11l3 3L22 4\"/><path d=\"M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11\"/></svg>", "pound": "<svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M18 7a4 4 0 0 0-7.5-1.5C10 7 10 9 10 12v3a4 4 0 0 1-2 4h11M6 13h8\"/></svg>", "cart": "<svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><circle cx=\"9\" cy=\"20\" r=\"1.5\"/><circle cx=\"18\" cy=\"20\" r=\"1.5\"/><path d=\"M2 3h3l2.7 12.4a2 2 0 0 0 2 1.6h7.6a2 2 0 0 0 2-1.6L21 7H6\"/></svg>"}, tic=k=>`<i class="tic" aria-hidden="true">${RIC[k]}</i>`, tone=(v,good,ok)=>v===null||v===undefined?"t-info":v>=good?"t-good":v>=ok?"t-amber":"t-bad";
+  { const hm=$("rheromt"); if(hm) hm.innerHTML = d.length ? (()=>{ const L=d[d.length-1]; return `<span>Audit week <b>${esc(wk(L.date))}</b></span><span>Score <b>${L.total}</b> · ${rating(L.total)[0]}</span><span>${L.cur?"Awaiting approval":"Approved"}</span><span>${weeks.length} week${weeks.length===1?"":"s"} saved</span>`; })() : `<span>No weeks saved yet</span>`; }
   if(!d.length){ $("mgmtempty").innerHTML=`<div class="empty muted">No weeks yet. Finish your first visit on the Summary tab and it appears here.</div>`; ["mgmttiles","scorechart","mgmtcompare","mgmttable","mgmtheat","mgmtpur"].forEach(k=>$(k).innerHTML=""); return; }
   $("mgmtempty").innerHTML = weeks.length<2 ? `<p class="tiny muted" style="margin:0">Trends get more useful from the second saved week onwards.</p>` : "";
   $("scorechart").innerHTML = scoreSvg(d.slice(-12));
@@ -2057,12 +2093,12 @@ function renderMgmt(){
   const sv = cur.sales!==null&&cur.sales!==undefined&&cur.target ? cur.sales/cur.target : null, pb = cur.pur&&cur.pur.budget ? cur.pur.spent/cur.pur.budget : null;
   $("mgmttiles").innerHTML = `<p class="tiny muted" style="margin:0">${cur.cur?"This visit, not approved yet":"Latest approved week"}: audit week ${esc(wk(cur.date))}, visited ${esc(cur.label)}${prev?`. Compared with ${esc(prev.label)}`:""}.</p>
     <div class="tiles">
-      <div class="tile"><span>Audit score</span><strong class="num">${cur.total}</strong> <b class="pill ${rating(cur.total)[1]}" style="display:inline-block;vertical-align:4px">${rating(cur.total)[0]}</b>${delta!==null?`<em class="tdelta ${delta>=0?"up":"down"}">${delta>=0?"+":""}${delta.toFixed(1)} on last week</em>`:""}</div>
-      <div class="tile"><span>Operations</span><strong class="num">${cur.ops}%</strong>${prev?`<em class="tdelta ${cur.ops>=prev.ops?"up":"down"}">was ${prev.ops}%</em>`:""}</div>
-      <div class="tile"><span>Issues found</span><strong class="num">${cur.issues.length}</strong><em class="tdelta">${fresh.length} new, ${still.length} still open</em></div>
-      <div class="tile"><span>Last visit's tasks done</span><strong class="num">${cur.carryN?`${Math.round(cur.carryDone/cur.carryN*100)}%`:"–"}</strong><em class="tdelta">${cur.carryN?`${cur.carryDone} of ${cur.carryN}`:"no tasks carried"}</em></div>
-      <div class="tile"><span>Sales vs target</span><strong class="num ${sv===null?"":sv>=1?"up":"down"}">${sv===null?"–":Math.round(sv*100)+"%"}</strong><em class="tdelta">${sv===null?"no figures yet":`${gbp(cur.sales)} of ${gbp(cur.target)}`}</em></div>
-      <div class="tile"><span>Purchases vs budget</span><strong class="num ${pb===null?"":pb>1?"down":"up"}">${pb===null?"–":Math.round(pb*100)+"%"}</strong><em class="tdelta">${pb===null?"no purchases yet":`${gbp(cur.pur.spent)} of ${gbp(cur.pur.budget)}`}</em></div>
+      <div class="tile ${tone(cur.total,95,80)}">${tic("star")}<span>Audit score</span><strong class="num">${cur.total}</strong> <b class="pill ${rating(cur.total)[1]}" style="display:inline-block;vertical-align:4px">${rating(cur.total)[0]}</b>${delta!==null?`<em class="tdelta ${delta>=0?"up":"down"}">${delta>=0?"+":""}${delta.toFixed(1)} on last week</em>`:""}</div>
+      <div class="tile ${tone(cur.ops,90,70)}">${tic("cog")}<span>Operations</span><strong class="num">${cur.ops}%</strong>${prev?`<em class="tdelta ${cur.ops>=prev.ops?"up":"down"}">was ${prev.ops}%</em>`:""}</div>
+      <div class="tile ${cur.issues.length===0?"t-good":fresh.length?"t-bad":"t-amber"}">${tic("alert")}<span>Issues found</span><strong class="num">${cur.issues.length}</strong><em class="tdelta">${fresh.length} new, ${still.length} still open</em></div>
+      <div class="tile ${cur.carryN?tone(cur.carryDone/cur.carryN,.9,.6):"t-info"}">${tic("bug")}<span>Last visit's tasks done</span><strong class="num">${cur.carryN?`${Math.round(cur.carryDone/cur.carryN*100)}%`:"–"}</strong><em class="tdelta">${cur.carryN?`${cur.carryDone} of ${cur.carryN}`:"no tasks carried"}</em></div>
+      <div class="tile ${tone(sv,1,.9)}">${tic("pound")}<span>Sales vs target</span><strong class="num ${sv===null?"":sv>=1?"up":"down"}">${sv===null?"–":Math.round(sv*100)+"%"}</strong><em class="tdelta">${sv===null?"no figures yet":`${gbp(cur.sales)} of ${gbp(cur.target)}`}</em></div>
+      <div class="tile ${pb===null?"t-info":pb>1?"t-bad":pb>.95?"t-amber":"t-good"}">${tic("cart")}<span>Purchases vs budget</span><strong class="num ${pb===null?"":pb>1?"down":"up"}">${pb===null?"–":Math.round(pb*100)+"%"}</strong><em class="tdelta">${pb===null?"no purchases yet":`${gbp(cur.pur.spent)} of ${gbp(cur.pur.budget)}`}</em></div>
     </div>
     ${isPen(cur.total)?`<div class="penrule"><b>${STAGES[stageFor(cur.date,cur.total)]}: ${cur.total} is below the pass mark of ${passMark()}.</b> ${esc(penText(cur.date,cur.total))}</div>`:`<div class="tiny" style="color:var(--good);font-weight:600">Pass mark of ${passMark()} met. No penalty.</div>`}
     ${cur.repeat.length?`<div class="penrule"><b>Repeat failures (3 or more visits), escalate:</b> ${cur.repeat.map(esc).join("; ")}</div>`:""}`;
