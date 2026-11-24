@@ -309,6 +309,34 @@ body.slot-next #saveweek,body.slot-next #reset{display:none}
 .firsthead h3{margin:0}
 .firstx{flex:none;width:36px;height:36px;border-radius:50%;border:1px solid var(--line);background:var(--card);color:var(--ink);font-size:16px;cursor:pointer}
 .firstx:hover{border-color:var(--accent);color:var(--accent)}
+.ratewrap{position:relative;display:inline-flex}
+.ratebtn{cursor:pointer;border:0;font:inherit}
+.ratebtn::after{content:" ▾";font-size:.85em}
+.ratebtn:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.ratepop{position:absolute;top:calc(100% + 8px);left:0;z-index:30;width:min(560px,86vw);background:var(--card);border:1px solid var(--line);border-radius:12px;box-shadow:0 12px 32px rgba(15,20,40,.22);padding:12px;display:grid;gap:8px}
+.ratepop[hidden]{display:none}
+.ratepop .tiny{font-weight:600}
+#penpill{display:none!important}
+.slotmain{margin:18px 0 -6px}
+.slotmain:empty{display:none}
+.dt{display:flex;gap:6px}.dt input{flex:1;min-width:0}
+.ownertag{display:inline-block;vertical-align:middle;font-size:11.5px;font-weight:600;letter-spacing:.01em;padding:2px 8px;border-radius:999px;margin-left:4px;border:1px solid}
+.ownertag.sm{color:var(--accent);border-color:color-mix(in srgb,var(--accent) 40%,transparent);background:color-mix(in srgb,var(--accent) 8%,transparent)}
+.ownertag.hr{color:#8a5a00;border-color:#e6c27a;background:#fff6e0}
+.buckets{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:4px}
+.buckets button{border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:999px;padding:6px 12px;font:inherit;font-size:13px;cursor:pointer}
+.buckets button b{margin-left:4px;font-variant-numeric:tabular-nums}
+.buckets button[aria-selected="true"]{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
+.buckets button:disabled{opacity:.45;cursor:default}
+.proof{display:grid;gap:6px;border-top:1px dashed var(--line);padding-top:8px}
+.proofhead{font-size:13px}
+.lbnav{position:absolute;top:50%;transform:translateY(-50%);width:48px;height:48px;border-radius:50%;border:0;background:rgba(255,255,255,.9);color:#111;font-size:30px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center}
+.lbnav[hidden]{display:none}
+.lbprev{left:16px}.lbnext{right:16px}
+.lbclose{position:absolute;top:14px;right:16px;width:40px;height:40px;border-radius:50%;border:0;background:rgba(255,255,255,.9);color:#111;font-size:18px;cursor:pointer}
+.lbcount{position:absolute;bottom:16px;left:50%;transform:translateX(-50%);color:#fff;font-size:14px;background:rgba(0,0,0,.5);padding:4px 10px;border-radius:999px}
+.lbcount:empty{display:none}
+@media (min-width:1024px){ #p-report.on{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;align-items:start} #p-report.on>*:not(.half){grid-column:1/-1} }
 .overbox{border:2px solid var(--bad);background:var(--bad-bg);border-radius:10px;padding:10px 12px}
 .ladder td,.ladder th{padding:6px 8px;text-align:left}.ladder tr.here td{background:var(--bad-bg)}
 details summary{cursor:pointer;color:var(--accent);font-weight:600;font-size:13.5px}
@@ -348,7 +376,7 @@ html{scroll-padding-top:120px}
   .panel{padding:22px 0 70px}
   .panel.on.stack{gap:16px}
   #p-report.on{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;align-items:start}
-  #p-report.on>*{grid-column:1/-1}
+  #p-report.on>*:not(.half){grid-column:1/-1}
 }
 @media (max-width:640px){ .account{width:100%;margin-left:0;justify-content:space-between} .brand .wrap{flex-wrap:wrap} .accttext span{max-width:150px} }
 /* ---------- what each role sees ---------- */
@@ -373,10 +401,9 @@ body:not([data-role]) .panel{visibility:hidden}
   <div class="wrap">
     <div class="score num" id="score">0.0<small> /100</small></div>
     <div class="barmeta">
-      <div class="barrow"><span class="pill r-crit" id="rating">Critical</span><span class="tiny muted num" id="done">0 of 117 checks scored</span><span class="tiny muted num" id="opsbar"></span><span class="pill" id="penpill"></span></div>
+      <div class="barrow"><span class="ratewrap"><button type="button" class="pill r-crit ratebtn" id="rating" aria-expanded="false" aria-controls="ratepop">Critical</button><div class="ratepop" id="ratepop" hidden><div class="penrule" id="penrule"></div><div class="tiny" id="penstate"></div></div></span><span class="tiny muted num" id="done">0 of 117 checks scored</span><span class="tiny muted num" id="opsbar"></span><span class="pill" id="penpill" hidden></span></div>
       <div class="progress" aria-hidden="true"><i id="prog"></i></div>
       <div class="barrow"><span class="pill r-mut" id="lockpill">Open</span><span class="tiny muted" id="locktext"></span><span class="tiny muted" id="roletext"></span><span class="pill" id="apprpill"></span><button type="button" class="pill r-crit needpill" id="needpill" hidden></button></div>
-      <div class="slotbar" id="slotbar"></div>
       <span class="sync"><span id="sync">Saved on this device</span> <button type="button" class="notebtn" id="syncnow" hidden style="font-size:12px">Save to account now</button> <button type="button" class="notebtn" id="photonow" hidden style="font-size:12px">Upload photos</button></span>
     </div>
   </div>
@@ -395,6 +422,7 @@ body:not([data-role]) .panel{visibility:hidden}
 </div>
 
 <div class="wrap">
+  <div class="slotbar slotmain" id="slotbar"></div>
 
   <!-- AUDIT -->
   <section class="panel on stack" id="p-audit" role="tabpanel" aria-labelledby="t-audit">
@@ -403,24 +431,13 @@ body:not([data-role]) .panel{visibility:hidden}
         <label class="f" for="store">Store<input type="text" id="store" value="Angel Supermarket"></label>
         <label class="f" for="manager">Store manager<input type="text" id="manager" placeholder="Name"></label>
         <label class="f" for="auditor">Area manager<input type="text" id="auditor" placeholder="Name"></label>
-        <label class="f" for="date">Visit date<input type="date" id="date"></label>
-      </div>
-      <div class="stack" style="gap:6px">
-        <span class="tiny muted" style="font-weight:500">Visit time</span>
-        <div class="seg" id="visit">
-          <button type="button" data-v="Day" aria-pressed="true">Day</button>
-          <button type="button" data-v="Evening" aria-pressed="false">Evening</button>
-          <button type="button" data-v="Overnight" aria-pressed="false">Overnight</button>
-        </div>
+        <label class="f" for="date">Visit date and time<span class="dt"><input type="date" id="date"><input type="time" id="vtime" aria-label="Visit time"></span></label>
       </div>
     </div>
 
     <div class="weekbox" id="auditweek"></div>
 
 
-    <div class="legend"><span><b>4</b> Fully compliant, with evidence</span><span><b>3</b> Good, minor issue</span><span><b>2</b> Partial, needs improvement</span><span><b>1</b> Significant problem</span><span><b>0</b> Failed or missing</span><span><b>N/A</b> Doesn't apply (left out of the score)</span></div>
-    <div class="penrule" id="penrule"></div>
-    <p class="tiny muted" style="margin:0">Anything you score below 4 becomes a task for the store team, due before your next visit (see Actions &amp; tasks).</p>
 
     <div class="stack" id="sections"></div>
 
@@ -445,7 +462,7 @@ body:not([data-role]) .panel{visibility:hidden}
 
     <div class="sec stripe" id="opsbox" data-fold>
       <div class="sechead">
-        <h3>Operations checks <button type="button" class="infobtn" data-info="ops" aria-label="About the operations checks" aria-expanded="false">i</button></h3>
+        <h3>Operations checks <button type="button" class="infobtn" data-info="ops" aria-label="About the operations checks" aria-expanded="false">i</button> <span class="ownertag hr">Input: HR</span></h3>
         <span class="secscore num" id="opsscore"></span>
         <span class="secsub"><span class="progress"><i id="opsprog"></i></span><span class="tiny muted num" id="opsdone"></span></span>
       </div>
@@ -621,31 +638,31 @@ body:not([data-role]) .panel{visibility:hidden}
       <div id="mgmtempty"></div>
       <div class="stack" id="mgmttiles"></div>
     </div>
-    <div class="card stack" data-fold>
+    <div class="card stack">
       <div class="cardhead"><h2>Weekly KPI figures</h2></div>
       <div id="kpitable"></div>
     </div>
-    <div class="card stack" data-fold>
+    <div class="card stack">
       <div class="cardhead"><h2>Issues: new, still open and fixed</h2></div>
       <div class="stack" id="mgmtcompare"></div>
     </div>
-    <div class="card stack" data-fold>
+    <div class="card stack half">
       <div class="cardhead"><h2>Score trend</h2></div>
       <div id="scorechart"></div>
     </div>
-    <div class="card stack" data-fold>
+    <div class="card stack half">
       <div class="cardhead"><h2>Week by week</h2></div>
       <div class="tablewrap nohead" id="mgmttable"></div>
     </div>
-    <div class="card stack" data-fold>
+    <div class="card stack">
       <div class="cardhead"><h2>Section results over time</h2></div>
       <div class="tablewrap nohead" id="mgmtheat"></div>
     </div>
-    <div class="card stack" data-fold>
+    <div class="card stack half">
       <div class="cardhead"><h2>Purchases against budget</h2></div>
       <div class="stack nohead" id="mgmtpur"></div>
     </div>
-    <div class="card stack" data-fold>
+    <div class="card stack half">
       <div class="cardhead"><h2>Email the report to management</h2></div>
       <p class="tiny muted" style="margin:0">Up to four people. The page gets the email ready with the week-on-week report. Send it from your own email.</p>
       <div class="grid2">
@@ -657,7 +674,7 @@ body:not([data-role]) .panel{visibility:hidden}
       <div class="actions"><button class="btn sm" type="button" id="mail_mg">Prepare email</button></div>
       <div class="stack" id="mail_mg_out" hidden></div>
     </div>
-    <div class="card stack" data-fold>
+    <div class="card stack half">
       <div class="cardhead"><h2>Download reports by date</h2></div>
       <p class="tiny muted" style="margin:0">Pick the visit dates to cover. Only weeks the owner has approved are included. The PDF-ready files open in any browser: choose Print, then Save as PDF. The CSV files open in Excel.</p>
       <div class="grid2">
@@ -684,7 +701,7 @@ body:not([data-role]) .panel{visibility:hidden}
         <button class="btn ghost" type="button" id="rp_mgmtcsv">Management report (Excel/CSV)</button>
       </div>
     </div>
-    <div class="card stack" data-fold>
+    <div class="card stack half">
       <div class="cardhead"><h2>Share and back up</h2></div>
       <div class="actions">
         <button class="btn" type="button" id="copymgmt">Copy management report</button>
@@ -779,7 +796,7 @@ body:not([data-role]) .panel{visibility:hidden}
     <div class="actions"><button class="btn" type="button" id="dorestore">Restore</button><button class="btn ghost" type="button" id="cancelrestore">Cancel</button></div>
   </div>
 </div>
-<div class="lightbox" id="lightbox" role="dialog" aria-modal="true" aria-label="Photo"><img id="lightimg" alt="Enlarged photo"></div>
+<div class="lightbox" id="lightbox" role="dialog" aria-modal="true" aria-label="Photo"><button type="button" class="lbnav lbprev" id="lbprev" aria-label="Previous photo">‹</button><img id="lightimg" alt="Enlarged photo"><button type="button" class="lbnav lbnext" id="lbnext" aria-label="Next photo">›</button><span class="lbcount" id="lbcount"></span><button type="button" class="lbclose" id="lbclose" aria-label="Close">✕</button></div>
 <div class="toast" id="toast" role="status"></div>
 
 
@@ -894,13 +911,13 @@ function ukTime(ymd, h, m){ // a London wall-clock time as a timestamp
     const lh=+parts.find(x=>x.type==="hour").value, lm=+parts.find(x=>x.type==="minute").value; let diff=(lh*60+lm)-(h*60+m); if(diff>720) diff-=1440; if(diff<-720) diff+=1440; return t-diff*60000; }catch(e){ return t; } }
 const fmtWhen = t => new Date(t).toLocaleString("en-GB",{timeZone:"Europe/London",weekday:"short",day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"});
 function lockInfo(S=st){
-  const team=+(cfg.teamDays??3), adm=+(cfg.adminDays??5), hr=+(cfg.adminHour??12);
+  const team=+(cfg.teamDays??4), adm=+(cfg.adminDays??5), hr=+(cfg.adminHour??12);
   const t1=ukTime(plusDays(S.date,team),23,59)+59999, t2=ukTime(plusDays(S.date,adm),hr,0), now=Date.now();
   if(isNaN(t1)) return {phase:"open",t1:NaN,t2:NaN};
   return {phase: now<t1 ? "open" : now<t2 ? "admin" : "locked", t1, t2};
 }
 function canEditNow(){ if(role==="viewer"||role==="loading") return false; if(OWNER()) return true; const L=lockInfo(); return L.phase==="open" ? true : L.phase==="admin" ? SUPER() : false; }
-const FREE = '.infobtn,.tab,.sechead,[data-jump],#copy,#showreport,#copytasks,#copymgmt,#dlmgmt,#dlcsv,#inccur,#syncnow,#photonow,#cancelreset,#cancelrestore,#mail_sm,#mail_mg,#dl_tasksheet,#firstdone,#firstall,#firstclose,#firstopen,.mailcopy,.mailro,#needpill,[data-slot],#slotnew,#rp_from,#rp_to,[data-rq],#rp_tasks,#rp_taskcsv,#rp_mgmt,#rp_mgmtcsv';
+const FREE = '.infobtn,.tab,.sechead,[data-jump],#copy,#showreport,#copytasks,#copymgmt,#dlmgmt,#dlcsv,#inccur,#syncnow,#photonow,#cancelreset,#cancelrestore,#mail_sm,#mail_mg,#dl_tasksheet,#firstdone,#firstall,#rating,[data-bk],#lbprev,#lbnext,#lbclose,#firstclose,#firstopen,.mailcopy,.mailro,#needpill,[data-slot],#slotnew,#rp_from,#rp_to,[data-rq],#rp_tasks,#rp_taskcsv,#rp_mgmt,#rp_mgmtcsv';
 const OWNER_ONLY = '#superlist';
 const REAL_OWNER = '#openedit';
 const OWNER_ANY = '#taskowner,#passmark,#warnweeks,#sm_email,[data-mg],#reset,#donext,#doreset,#backup,#w_team,#w_admin,#w_hour';
@@ -926,7 +943,7 @@ function applyLock(){
     const [at,ac] = !ap ? ["Draft: awaiting owner approval","r-ni"] : chg ? ["Changed since approval: awaiting approval","r-ni"] : ["Approved by owner","r-good"];
     const e=$("apprpill"); setT(e,at); if(e && e.className!=="pill "+ac) e.className="pill "+ac; }
   const wt=$("windowtext"); const wh = isNaN(L.t1) ? "" : `Visit on <b>${fmtDate(st.date)}</b>. Team edits until <b>${fmtWhen(L.t1)}</b>. Super admin edits until <b>${fmtWhen(L.t2)}</b>, then editing closes. Nothing is final until the owner approves it.`; if(wt && wt.innerHTML!==wh) wt.innerHTML=wh;
-  ["w_team","w_admin","w_hour"].forEach((i,n)=>{ const e=$(i); const v=String([cfg.teamDays??3, cfg.adminDays??5, cfg.adminHour??12][n]); if(e && document.activeElement!==e && e.value!==v) e.value = v; if(false) e.value = [cfg.teamDays??3, cfg.adminDays??5, cfg.adminHour??12][n]; });
+  ["w_team","w_admin","w_hour"].forEach((i,n)=>{ const e=$(i); const v=String([cfg.teamDays??4, cfg.adminDays??5, cfg.adminHour??12][n]); if(e && document.activeElement!==e && e.value!==v) e.value = v; if(false) e.value = [cfg.teamDays??4, cfg.adminDays??5, cfg.adminHour??12][n]; });
 }
 function queueLock(){ if(!lockQueued){ lockQueued=true; queueMicrotask(applyLock); } }
 function startRoles(){ startRoles.p = startRoles.p || _startRoles(); return startRoles.p; }
@@ -976,7 +993,7 @@ function diffSummary(a,b){
   const out=[], lab=k=>{ const it=ITEM[k]; if(it) return it.code; if(k.startsWith("x.")){ const i=(b.extra||[]).findIndex(o=>"x."+o.id===k); return "observation "+(i+1); } return k; };
   const keys=(x,y)=>[...new Set([...Object.keys(x||{}),...Object.keys(y||{})])];
   const same=(x,y)=>JSON.stringify(x??null)===JSON.stringify(y??null);
-  ["store","manager","auditor","date","visit"].forEach(f=>{ if(a[f]!==b[f]) out.push(`${f==="date"?"Visit date":f[0].toUpperCase()+f.slice(1)} changed to "${b[f]||""}"`); });
+  ["store","manager","auditor","date","time"].forEach(f=>{ if(a[f]!==b[f]) out.push(`${f==="date"?"Visit date":f[0].toUpperCase()+f.slice(1)} changed to "${b[f]||""}"`); });
   keys(a.s,b.s).forEach(k=>{ const x=(a.s||{})[k], y=(b.s||{})[k]; if(x!==y) out.push(`Scored ${lab(k)}: ${x===undefined?"blank":x==="na"?"N/A":x} → ${y===undefined?"blank":y==="na"?"N/A":y}`); });
   keys(a.notes,b.notes).forEach(k=>{ if((a.notes||{})[k]!==(b.notes||{})[k]) out.push(`Note on ${lab(k)}`); });
   keys(a.act,b.act).forEach(k=>{ if(!same((a.act||{})[k],(b.act||{})[k])) out.push(`Task details for ${lab(k)}`); });
@@ -1025,8 +1042,11 @@ function mergeWeeks(remote){
   // union: never drop a week that only exists on this device; newest save wins per date
   const map={}; weeks.forEach(w=>map[w.id]=w);
   remote.forEach(r=>{ const l=map[r.id]; if(!l || (r.savedAt||0) >= (l.savedAt||0)) map[r.id]=r; });
-  weeks = Object.values(map).sort((a,b)=>a.id<b.id?-1:1); lsSet(WKEY, weeks);
+  weeks = Object.values(map).sort((a,b)=>a.id<b.id?-1:1); weeks.forEach(freshSum); lsSet(WKEY, weeks);
 }
+// Saved totals follow today's scoring rules, so every screen shows the same score for a week.
+function freshSum(w){ try{ if(!w.sum || !w.json) return w; const S=normalize(Object.assign(blank(), JSON.parse(w.json))); const r=computeSum(S);
+  w.sum=Object.assign({}, w.sum, {total:r.total, secPct:r.secPct, done:r.done}); }catch(e){} return w; }
 let listening=false;
 function listenWeeks(){
   if(listening || !db) return; listening=true;
@@ -1184,6 +1204,14 @@ async function storePhoto(file){
 const PIX = "data:image/gif;base64,R0lGODlhAQABAAAAACw=";
 function imgSrc(p){ if(p.data) return `src="${p.data}"`; if(/^sb:/.test(p.id||"")) return `src="${esc(photoUrl(p.id))}"`; if(p.local) return `src="${PIX}" data-local="${esc(p.id)}"`; return `src="/_blob/${esc(p.id)}"`; }
 const urlCache = {};
+const LB = {list:[], i:0};
+function lbShow(){ $("lightimg").src=LB.list[LB.i]||""; const m=LB.list.length>1; $("lbprev").hidden=!m; $("lbnext").hidden=!m; $("lbcount").textContent = m ? `${LB.i+1} of ${LB.list.length}` : ""; }
+function lbStep(d){ if(LB.list.length<2) return; LB.i=(LB.i+d+LB.list.length)%LB.list.length; lbShow(); }
+document.addEventListener("keydown", e=>{ if(!$("lightbox").classList.contains("on")) return;
+  if(e.key==="ArrowLeft"){ e.preventDefault(); lbStep(-1); } else if(e.key==="ArrowRight"){ e.preventDefault(); lbStep(1); } else if(e.key==="Escape") $("lightbox").classList.remove("on"); });
+{ let x0=null; const lb=document.getElementById("lightbox");
+  lb.addEventListener("touchstart", e=>{ x0=e.touches[0].clientX; }, {passive:true});
+  lb.addEventListener("touchend", e=>{ if(x0===null) return; const dx=e.changedTouches[0].clientX-x0; x0=null; if(Math.abs(dx)>40) lbStep(dx<0?1:-1); }); }
 function hydrate(){ document.querySelectorAll("img[data-local]:not([data-done])").forEach(img=>{ img.dataset.done="1"; const k=img.dataset.local;
   if(urlCache[k]){ img.src=urlCache[k]; return; }
   idbGet(k).then(b=>{ if(b){ urlCache[k]=URL.createObjectURL(b); img.src=urlCache[k]; } else img.alt="Photo saved on another device"; }).catch(()=>{}); }); }
@@ -1195,7 +1223,7 @@ async function handlePhotos(k, files){
   const list=[...files].slice(0,6); if(!list.length) return; toast(list.length>1?"Adding photos…":"Adding photo…");
   let ok=0;
   for(const f of list){ try{ const p=await storePhoto(f); (st.photos[k] ||= []).push(p); ok++; }catch(e){} }
-  save(); renderMedia(k); renderFindings(); renderTasks();
+  save(); renderMedia(k); renderFindings(); renderTasks.done=false; renderTasks(); refreshFirst();
   toast(ok===list.length ? (ok>1?"Photos added.":"Photo added.") : "Some photos couldn't be added. Try a JPG or PNG.");
 }
 
@@ -1485,12 +1513,15 @@ function checkHtml(k, code, text, hint, cm){
     <div class="media" id="ph${key}">${mediaHtml(k)}</div>
   </div>`;
 }
+// Who fills in each section: HR does the sales and profit sections (the store manager can't see them), the store manager does the rest.
+const SEC_OWNER = i => i<2 ? "HR" : "Store Manager";
+const ownerTag = o => `<span class="ownertag ${o==="HR"?"hr":"sm"}">Input: ${o}</span>`;
 function renderSections(){
   const cm = carryMap();
   $("sections").innerHTML = SECTIONS.map((s,i)=>`
    <div class="sec stripe${st.open===i?" open":""}" id="sec${i}">
      <div class="sechead" role="button" tabindex="0" aria-expanded="${st.open===i}" data-sec="${i}">
-       <h3><span class="chev" aria-hidden="true">›</span> ${i+1}. ${esc(s.n)} <button type="button" class="infobtn" data-info="s${i}" aria-label="About section ${i+1}" aria-expanded="false">i</button></h3>
+       <h3><span class="chev" aria-hidden="true">›</span> ${i+1}. ${esc(s.n)} <button type="button" class="infobtn" data-info="s${i}" aria-label="About section ${i+1}" aria-expanded="false">i</button> ${ownerTag(SEC_OWNER(i))}</h3>
        <span class="secscore num" id="ss${i}"></span>
        <span class="secsub"><span class="progress"><i id="sp${i}"></i></span><span class="tiny muted num" id="sd${i}"></span></span>
      </div>
@@ -1515,7 +1546,9 @@ function jumpMissing(){ const k=missingComments()[0]; if(!k) return; const tab=k
   setTimeout(()=>{ const ta=$("n"+kk(k)); if(ta){ ta.scrollIntoView({block:"center"}); ta.focus(); } },60); }
 function blockIfMissing(){ const n=missingComments().length; if(!n) return false; toast(`${n} check${n===1?"":"s"} scored 0, 1, 2 or N/A still need${n===1?"s":""} a comment. Add ${n===1?"it":"them"} before approving.`); jumpMissing(); return true; }
 
-function brandSub(){ const bs=$("brandsub"); if(bs){ const v=`${st.store||"Angel Supermarket"} · Audit week ${wk()} · visited ${fmtDate(st.date)} (${(st.visit||"Day").toLowerCase()})`; if(bs.textContent!==v) bs.textContent=v; }
+const periodOf = t => { const h=parseInt(String(t||"").slice(0,2),10); return isNaN(h)?"Day":(h>=6&&h<18)?"Day":(h>=18&&h<22)?"Evening":"Overnight"; };
+const visitLabel = S => S.time ? `${S.time} (${(S.visit||periodOf(S.time)).toLowerCase()})` : (S.visit||"");
+function brandSub(){ const bs=$("brandsub"); if(bs){ const v=`${st.store||"Angel Supermarket"} · Audit week ${wk()} · visited ${fmtDate(st.date)}${st.time?" at "+st.time:" ("+(st.visit||"Day").toLowerCase()+")"}`; if(bs.textContent!==v) bs.textContent=v; }
   const aw=$("auditweek"); if(aw){ const h=`<b>Audit week: Monday to Sunday, ${wk()}.</b> Score what happened in the store during those 7 days. Sales, purchases, the daily sales record and online orders all cover the same week. The visit itself is on ${fmtDate(st.date)}.`; if(aw.innerHTML!==h) aw.innerHTML=h; } }
 function refresh(){
   brandSub();
@@ -1529,10 +1562,11 @@ function refresh(){
   });
   $("score").innerHTML = total.toFixed(1)+"<small> /100</small>";
   const [label,cls] = rating(total);
-  const rt=$("rating"); rt.textContent = done<TOTAL ? label+" so far" : label; rt.className="pill "+cls;
+  const rt=$("rating"); rt.textContent = done<TOTAL ? label+" so far" : label; rt.className="pill ratebtn "+cls;
   $("done").textContent = done+" of "+TOTAL+" checks scored"+(done===TOTAL?" · final":"");
   $("prog").style.width = (done/TOTAL*100)+"%";
   { const pp=$("penpill"), pn=isPen(total), pm=passMark(); const sg=stageFor(st.date,total); pp.textContent = pn ? `${done<TOTAL?"So far: ":""}below ${pm}, ${STAGES[sg].toLowerCase()}` : `Pass mark ${pm} met`; pp.className="pill "+(pn?"r-crit":"r-good");
+  { const pp=$("penpill"), ps=$("penstate"); if(ps){ const v=pp.textContent; if(ps.textContent!==v) ps.textContent=v; ps.style.color = pp.className.includes("r-good") ? "var(--good)" : "var(--bad)"; } }
     const pc=$("penaltycard"); if(pc){ pc.classList.toggle("pen-on",pn); $("pentitle").textContent = pn ? `${STAGES[sg]}: score ${total.toFixed(1)} is below the pass mark of ${pm}` : `No penalty: score ${total.toFixed(1)} meets the pass mark of ${pm}`;
       $("penbody").textContent = pn ? penText(st.date,total)+(done<TOTAL?` (Provisional: ${done} of ${TOTAL} checks scored.)`:"") : `The Store Manager has met the required standard of ${pm} out of 100.`; } }
   const o=opsCalc();
@@ -1573,6 +1607,13 @@ function renderFindings(){
 }
 
 /* ---------- staff tasks ---------- */
+const BK = {t:"", c:""};
+const bucketOf = x => x.obs ? "obs" : (x.v<=1 ? "urgent" : "improve");
+const BUCKETS = [["obs","Observations"],["urgent","Urgent, scored 0 or 1"],["improve","Improve, scored 2 or 3"]];
+function bucketBar(items, which){ const n={}, d={}; items.forEach(x=>{ n[x.b]=(n[x.b]||0)+1; if(x.done) d[x.b]=(d[x.b]||0)+1; });
+  let cur=BK[which]; if(!n[cur]) cur=(BUCKETS.find(b=>n[b[0]])||BUCKETS[0])[0]; BK[which]=cur;
+  const html=`<div class="buckets" role="tablist">${BUCKETS.map(([k,l])=>`<button type="button" role="tab" data-bk="${which}:${k}" aria-selected="${k===cur}"${n[k]?"":" disabled"}>${l} <b>${which==="c"&&n[k]?`${d[k]||0}/${n[k]}`:(n[k]||0)}</b></button>`).join("")}</div>`;
+  return {cur, html}; }
 function renderTasks(){
   const t=taskList(); const due=nextSat(st.date);
   const b=$("tcount"); b.hidden=!t.length; b.textContent=t.length;
@@ -1581,7 +1622,8 @@ function renderTasks(){
   const onTasks = $("p-tasks").classList.contains("on");
   if(!onTasks && renderTasks.done) { renderCarryHead(); return; }
   renderTasks.done = true;
-  $("tasklist").innerHTML = t.length ? t.sort((a,b)=>(a.obs?-1:a.v)-(b.obs?-1:b.v)).map(x=>{ const a=st.act[x.k]||{}; const key=kk(x.k);
+  const tb = bucketBar(t.map(x=>({b:bucketOf(x)})), "t");
+  $("tasklist").innerHTML = t.length ? tb.html + t.filter(x=>bucketOf(x)===tb.cur).sort((a,b)=>(a.obs?-1:a.v)-(b.obs?-1:b.v)).map(x=>{ const a=st.act[x.k]||{}; const key=kk(x.k);
     return `<div class="card finding ${x.v<=1?"":x.v===2?"sev2":"sev3"} stack">
       <div><span class="pill ${x.obs?"r-ni":x.v<=1?"r-poor":x.v===2?"r-ni":"r-mut"}">${x.obs?"Observation":"Scored "+x.v}</span> <span class="tiny muted">${x.obs?"":x.v===0?"Major: fix within 24 hours · ":x.v===1?"Significant: fix within 7 days or sooner · ":""}${esc(x.sec)}</span></div>
       <h3>${x.code} ${esc(x.text)}</h3>
@@ -1600,18 +1642,23 @@ function renderTasks(){
 function renderCarryHead(){ const c=st.carry; const m=c.filter(x=>x.status).length; $("carrysum").textContent = c.length ? `${m} of ${c.length} checked` : ""; }
 const isPri = x => x.obs || (typeof x.v==="number" && x.v<=3);
 const isTop = x => x.obs || x.v===0;
+const proofKey = x => x.k+"!p";
+function proofHtml(x){ const k=proofKey(x), ph=st.photos[k]||[], need=(x.status==="done"||x.status==="part") && !ph.length;
+  return `<div class="proof"><div class="proofhead"><b>Proof it's fixed</b>${need?' <span class="needc">Add a photo to prove it</span>':ph.length?` <span class="tiny" style="color:var(--good);font-weight:600">${ph.length} photo${ph.length>1?"s":""} added</span>`:' <span class="tiny muted">Photo of the fix, added by whoever marks it</span>'}</div>${ph.length?`<div class="media">${thumbs(k)}</div>`:""}${photoLabel(k).replace("+ Add photo","+ Add proof photo")}</div>`; }
+function refreshFirst(){ if($("firstdlg").classList.contains("on") && firstCheck.list){ $("firstlist").innerHTML = firstCheck.list.map(i=>carryCard(st.carry[i],i,"fc")).join(""); hydrate(); applyLock(); } }
 function carryCard(x,i,pre){ return `<div class="card finding ${x.weeks>=3?"":x.status==="done"?"sev3":"sev2"} stack">
       <div class="cardhead"><h3>${isPri(x)?`<span class="pill ${x.obs?"r-ni":x.v<=1?"r-poor":x.v===2?"r-ni":"r-mut"}">${x.obs?"Observation":"Scored "+x.v}</span> `:""}${esc(x.code)} ${esc(x.text)}</h3>${x.weeks>=3?`<span class="pill r-crit">Repeat failure, ${x.weeks} visits: escalate</span>`:x.weeks===2?`<span class="pill r-ni">2nd visit running</span>`:""}</div>
       <span class="tiny muted">Set ${fmtDate(x.from)} · ${x.obs?"observation":"scored "+x.v} · owner ${esc(x.owner||defOwner())} · due ${fmtDate(x.due)}</span>
       ${x.action?`<span>${esc(x.action)}</span>`:""}
       ${x.note?`<span class="muted">Found: ${esc(x.note)}</span>`:""}
       ${(x.photos||[]).length?`<div class="media">${x.photos.map((p,j)=>`<span class="thumb"><img ${imgSrc(p)} alt="Photo ${j+1}" data-view="1" loading="lazy"></span>`).join("")}</div>`:""}
+      ${proofHtml(x)}
       <div class="statusrow" role="group" aria-label="Status for ${esc(x.code)}">
         <button type="button" data-ci="${i}" data-st="done" aria-pressed="${x.status==="done"}">Done</button>
         <button type="button" data-ci="${i}" data-st="part" aria-pressed="${x.status==="part"}">Partly done</button>
         <button type="button" data-ci="${i}" data-st="not" aria-pressed="${x.status==="not"}">Not done</button>
       </div>
-      <input type="text" id="${pre}${i}" data-cn="${i}" value="${esc(x.comment||"")}" placeholder="Comment (optional)" aria-label="Comment for ${esc(x.code)}">
+      <input type="text" id="${pre}${i}" data-cn="${i}" value="${esc(x.comment||"")}" placeholder="${x.status==="part"||x.status==="not"?"Comment: what's still left to do?":"Comment (optional)"}" aria-label="Comment for ${esc(x.code)}">
     </div>`; }
 function carryOrder(){ return st.carry.map((x,i)=>i).sort((a,b)=>{ const A=st.carry[a],B=st.carry[b]; const pa=isPri(A)?0:1, pb=isPri(B)?0:1; if(pa!==pb) return pa-pb; const va=A.obs?-1:A.v, vb=B.obs?-1:B.v; return va-vb; }); }
 let firstShown=false;
@@ -1621,20 +1668,22 @@ function firstCheck(force){
   firstShown=true;
   const list = force ? carryOrder().filter(i=>isTop(st.carry[i])) : pend;
   if(!list.length){ toast("No priority tasks from last visit."); return; }
-  $("firstlist").innerHTML = list.map(i=>carryCard(st.carry[i],i,"fc")).join("");
+  firstCheck.list = list; $("firstlist").innerHTML = list.map(i=>carryCard(st.carry[i],i,"fc")).join("");
   $("firsttext").textContent = `${list.length} item${list.length>1?"s":""} from your visit on ${fmtDate(st.carry[list[0]].from)}: your observations first, then every check scored 0. The rest (scored 1 to 3) are on the Actions & tasks tab. Mark each one before you start today's audit.`;
   $("firstdlg").classList.add("on"); hydrate(); applyLock();
 }
 function renderCarry(){
   renderCarryHead();
   const c=st.carry;
-  if(true){ $("carrylist").innerHTML = c.length ? carryOrder().map(i=>carryCard(c[i],i,"cc")).join("") : `<div class="empty muted">Nothing to check yet. After you finish a visit, its tasks show up here at the next one.</div>`; return; }
+  if(true){ const ord=carryOrder(), cb=bucketBar(ord.map(i=>({b:bucketOf(c[i]), done:!!c[i].status})), "c");
+    $("carrylist").innerHTML = c.length ? cb.html + ord.filter(i=>bucketOf(c[i])===cb.cur).map(i=>carryCard(c[i],i,"cc")).join("") : `<div class="empty muted">Nothing to check yet. After you finish a visit, its tasks show up here at the next one.</div>`; return; }
   $("carrylist").innerHTML = c.length ? c.map((x,i)=>`<div class="card finding ${x.weeks>=3?"":x.status==="done"?"sev3":"sev2"} stack">
       <div class="cardhead"><h3>${esc(x.code)} ${esc(x.text)}</h3>${x.weeks>=3?`<span class="pill r-crit">Repeat failure, ${x.weeks} visits: escalate</span>`:x.weeks===2?`<span class="pill r-ni">2nd visit running</span>`:""}</div>
       <span class="tiny muted">Set ${fmtDate(x.from)} · ${x.obs?"observation":"scored "+x.v} · owner ${esc(x.owner||"not set")} · due ${fmtDate(x.due)}</span>
       ${x.action?`<span>${esc(x.action)}</span>`:""}
       ${x.note?`<span class="muted">Found: ${esc(x.note)}</span>`:""}
       ${(x.photos||[]).length?`<div class="media">${x.photos.map((p,j)=>`<span class="thumb"><img ${imgSrc(p)} alt="Photo ${j+1}" data-view="1" loading="lazy"></span>`).join("")}</div>`:""}
+      ${proofHtml(x)}
       <div class="statusrow" role="group" aria-label="Status for ${esc(x.code)}">
         <button type="button" data-ci="${i}" data-st="done" aria-pressed="${x.status==="done"}">Done</button>
         <button type="button" data-ci="${i}" data-st="part" aria-pressed="${x.status==="part"}">Partly done</button>
@@ -1832,7 +1881,7 @@ function computeSum(S){
   let total=0, done=0;
   const secPct = SECTIONS.map((s,i)=>{ const r=secCalc(i,S); total+=r.score; done+=r.done; return r.pct===null?null:Math.round(r.pct*100); });
   const o=opsCalc(S); const carry=S.carry||[]; const kp=k=>n0(S.kpi[k]);
-  return {scores:Object.assign({},S.s), date:S.date, visit:S.visit, manager:S.manager, auditor:S.auditor, total:+total.toFixed(1), done, ops:Math.round(o.score), opsDone:o.done,
+  return {scores:Object.assign({},S.s), date:S.date, visit:visitLabel(S), time:S.time||"", manager:S.manager, auditor:S.auditor, total:+total.toFixed(1), done, ops:Math.round(o.score), opsDone:o.done,
     opsPct:o.pct===null?null:Math.round(o.pct*100), secPct,
     issues: taskList(S).map(t=>({k:t.k, code:t.code, text:t.text, v:t.v, obs:!!t.obs, note:S.notes[t.k]||"", photos:(S.photos[t.k]||[]).slice(0,4)})),
     carryN:carry.length, carryDone:carry.filter(c=>c.status==="done").length, carryPart:carry.filter(c=>c.status==="part").length,
@@ -1914,7 +1963,8 @@ async function startNext(){
   toast(`Week saved. ${carry.length} task${carry.length===1?"":"s"} carried into the next visit.`);
 }
 function mgmtSeries(){
-  const s = weeks.map(w=>Object.assign({label:fmtDate(w.id), cur:false, submitted:!!w.submitted}, w.sum));
+  const live = $("inccur").checked && slot==="draft";
+  const s = weeks.map(w=> (live && w.id===st.date) ? Object.assign({label:fmtDate(w.id), cur:true, submitted:!!w.submitted}, computeSum(st)) : Object.assign({label:fmtDate(w.id), cur:false, submitted:!!w.submitted}, w.sum));
   if($("inccur").checked && !weeks.some(w=>w.id===st.date)) s.push(Object.assign({label:fmtDate(st.date), cur:true}, computeSum(st)));
   return s;
 }
@@ -2264,14 +2314,22 @@ document.addEventListener("click", e=>{
   if(nb){ const k=nb.dataset.note; const w=$("nw"+kk(k)); w.innerHTML=noteBox(k,""); w.querySelector("textarea").focus(); return; }
   const vb=e.target.closest("#visit button");
   if(vb){ st.visit=vb.dataset.v; brandSub(); document.querySelectorAll("#visit button").forEach(b=>b.setAttribute("aria-pressed", b===vb)); save(); return; }
+  const bk=e.target.closest("[data-bk]"); if(bk){ const [w,k]=bk.dataset.bk.split(":"); BK[w]=k; renderTasks.done=false; renderTasks(); return; }
+  if(e.target.closest("#rating")){ const pop=$("ratepop"), open=pop.hidden; pop.hidden=!open; $("rating").setAttribute("aria-expanded", String(open)); return; }
+  if(!$("ratepop").hidden && !e.target.closest("#ratepop")){ $("ratepop").hidden=true; $("rating").setAttribute("aria-expanded","false"); }
   const rm=e.target.closest("[data-rmk]");
-  if(rm){ const k=rm.dataset.rmk; (st.photos[k]||[]).splice(+rm.dataset.rmi,1); save(); renderMedia(k); renderFindings(); toast("Photo removed."); return; }
+  if(rm){ const k=rm.dataset.rmk; (st.photos[k]||[]).splice(+rm.dataset.rmi,1); save(); renderMedia(k); renderFindings(); if(k.endsWith("!p")){ renderTasks.done=false; renderTasks(); refreshFirst(); } toast("Photo removed."); return; }
   const im=e.target.closest("img[data-view]");
-  if(im){ $("lightimg").src=im.src; $("lightbox").classList.add("on"); return; }
-  if(e.target.closest("#lightbox")){ $("lightbox").classList.remove("on"); return; }
+  if(im){ const box=im.closest(".media")||im.parentNode.parentNode; const imgs=[...box.querySelectorAll("img[data-view]")]; LB.list=imgs.map(x=>x.src); LB.i=Math.max(0,imgs.indexOf(im)); lbShow(); $("lightbox").classList.add("on"); return; }
+  if(e.target.closest("#lbprev")){ lbStep(-1); return; }
+  if(e.target.closest("#lbnext")){ lbStep(1); return; }
+  if(e.target.closest("#lightbox") && e.target.id!=="lightimg"){ $("lightbox").classList.remove("on"); return; }
   const cs=e.target.closest(".statusrow button");
   if(cs){ const c=st.carry[+cs.dataset.ci]; c.status = c.status===cs.dataset.st ? "" : cs.dataset.st;
-    cs.parentNode.querySelectorAll("button").forEach(b=>b.setAttribute("aria-pressed", String(b.dataset.st===c.status))); renderCarryHead(); save(); return; }
+    cs.parentNode.querySelectorAll("button").forEach(b=>b.setAttribute("aria-pressed", String(b.dataset.st===c.status))); renderCarryHead(); save();
+    renderTasks.done=false; renderTasks(); refreshFirst();
+    if((c.status==="done"||c.status==="part") && !(st.photos[proofKey(c)]||[]).length){ const inp=document.getElementById("pf"+kk(proofKey(c))); if(inp) inp.click(); }
+    return; }
   const jp=e.target.closest("[data-jump]");
   if(jp){ const tg=$(jp.dataset.jump); const f=tg && tg.closest(".fold"); if(f && !f.classList.contains("open")) openFold(f,true,false); tg.scrollIntoView({block:"start"}); window.scrollBy(0,-topH()); return; }
   const xo=e.target.closest("[data-delobs]");
@@ -2294,6 +2352,7 @@ document.addEventListener("input", e=>{
   if(t.dataset.ol){ st.ol[t.dataset.ol]=t.value; renderOlOut(); save(); return; }
   if(t.dataset.xo){ const o=st.extra.find(x=>x.id===t.dataset.xo); if(o){ o.text=t.value; save(); renderTasks(); } return; }
   if(t.dataset.cn!==undefined){ st.carry[+t.dataset.cn].comment=t.value; save(); return; }
+  if(t.id==="vtime"){ st.time=t.value; st.visit=periodOf(t.value); save(); brandSub(); return; }
   if(["store","manager","auditor","date"].includes(t.id)){ st[t.id]=t.value; save(); brandSub(); }
 });
 document.addEventListener("change", e=>{
@@ -2382,7 +2441,7 @@ function renderGuides(){ const g=$("scoringguide"); if(g) g.innerHTML=scoringGui
   <h3>Weekly purchases</h3><p class="formula">Week total = Store purchases + Cash &amp; Carry purchases (Monday to Sunday)<br>Budget used % = week total ÷ weekly budget × 100</p><p>The weekly budget is ${gbp(n0(cfg.budget)||0)}. If the week goes over budget, the store must write a reason, and it appears in the management report.</p>`; }
 function init(){
   applyAutoFigs(); renderGuides();
-  ["store","manager","auditor","date"].forEach(k=>$(k).value=st[k]||"");
+  ["store","manager","auditor","date"].forEach(k=>$(k).value=st[k]||""); if($("vtime")) $("vtime").value=st.time||"";
   document.querySelectorAll("#visit button").forEach(b=>b.setAttribute("aria-pressed", b.dataset.v===st.visit));
   renderTasks.done=false;
   fillMailInputs();
