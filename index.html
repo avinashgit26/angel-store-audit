@@ -353,6 +353,13 @@ body.slot-next #saveweek,body.slot-next #reset{display:none}
 .secnav button{flex:none;white-space:nowrap;font-weight:500!important;padding:5px 11px!important}
 .sync{font-size:12px}
 .fold:not(.open) > .guidebox:not([hidden]){display:block!important}
+/* section rows: no progress bars, one clean line */
+.sec .sechead{grid-template-columns:1fr auto auto;gap:4px 16px}
+.sec .sechead .secsub{grid-column:auto;order:1}
+.sec .sechead .secscore{order:2;min-width:64px}
+.sec .sechead .secsub .progress{display:none}
+.sec .sechead .secsub .tiny::after{content:" checked"}
+.secnav{scrollbar-width:none}.secnav::-webkit-scrollbar{display:none}
 .overbox{border:2px solid var(--bad);background:var(--bad-bg);border-radius:10px;padding:10px 12px}
 .ladder td,.ladder th{padding:6px 8px;text-align:left}.ladder tr.here td{background:var(--bad-bg)}
 details summary{cursor:pointer;color:var(--accent);font-weight:600;font-size:13.5px}
