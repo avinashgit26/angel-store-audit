@@ -445,6 +445,14 @@ h2.hh{display:flex;align-items:center;gap:9px}
 .duebox{display:block;background:var(--paper);border:1px solid var(--line);border-radius:8px;padding:9px 12px;font-size:14px;color:var(--ink)}
 .ownsel{width:100%}
 .clearnote{font-size:12.5px;margin-top:2px;color:var(--bad)}
+.docchip{display:inline-flex;align-items:center;gap:2px;border:1px solid var(--line);background:var(--card);border-radius:8px;padding:2px 4px 2px 2px;max-width:100%;vertical-align:middle}
+.doclink{display:inline-flex;align-items:center;gap:6px;border:0;background:transparent;color:var(--accent);font-size:13px;font-weight:500;padding:4px 6px;cursor:pointer;max-width:240px}
+.doclink span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.doclink svg{width:16px;height:16px;flex:0 0 auto;color:var(--bad)}
+.docrm{border:0;background:transparent;color:var(--muted);font-size:16px;line-height:1;padding:2px 6px;cursor:pointer}
+.docrm:hover{color:var(--bad)}
+.proofadd{display:flex;flex-wrap:wrap;gap:14px}
+.media label.notebtn[for^="df"]{margin-left:12px}
 </style>
 <style>
 /* ---------- dashboard layout ---------- */
@@ -943,7 +951,7 @@ body:not([data-role]) .panel{visibility:hidden}
 
 <script src="config.js?v=4ae33b4376"></script>
 <script src="vendor/supabase.js?v=34035ac76d"></script>
-<script src="js/backend.js?v=506b180435"></script>
+<script src="js/backend.js?v=c987955990"></script>
 <script>
 const SECTIONS = [
  {n:"Sales & revenue performance",w:10,c:["Weekly sales target achieved, compared with actual sales","Sales compared with previous week and same week last year","Sales by all retail categories reviewed","Commission income reported separately from shop sales","Average transaction value and transaction count reviewed","Top-selling and underperforming products identified","Peak-hour and overnight sales performance reviewed","Actions agreed to improve next week's sales"]},
@@ -1049,7 +1057,7 @@ function lockInfo(S=st){
   return {phase: now<t1 ? "open" : "locked", t1, t2};
 }
 function canEditNow(){ if(role==="viewer"||role==="loading") return false; if(OWNER()) return true; return lockInfo().phase==="open"; }
-const FREE = '[data-ownf],.infobtn,.tab,.sechead,[data-jump],#copy,#showreport,#copytasks,#copymgmt,#dlmgmt,#dlcsv,#inccur,#syncnow,#photonow,#cancelreset,#cancelrestore,#mail_sm,#mail_mg,#dl_tasksheet,#firstdone,#firstall,[data-secjump],#rating,[data-bk],#lbprev,#lbnext,#lbclose,#firstclose,#firstopen,.mailcopy,.mailro,#needpill,[data-slot],#slotnew,#rp_from,#rp_to,[data-rq],#rp_tasks,#rp_taskcsv,#rp_mgmt,#rp_mgmtcsv';
+const FREE = '[data-doc],[data-ownf],.infobtn,.tab,.sechead,[data-jump],#copy,#showreport,#copytasks,#copymgmt,#dlmgmt,#dlcsv,#inccur,#syncnow,#photonow,#cancelreset,#cancelrestore,#mail_sm,#mail_mg,#dl_tasksheet,#firstdone,#firstall,[data-secjump],#rating,[data-bk],#lbprev,#lbnext,#lbclose,#firstclose,#firstopen,.mailcopy,.mailro,#needpill,[data-slot],#slotnew,#rp_from,#rp_to,[data-rq],#rp_tasks,#rp_taskcsv,#rp_mgmt,#rp_mgmtcsv';
 const OWNER_ONLY = '#superlist';
 const REAL_OWNER = '#openedit';
 const OWNER_ANY = '#taskowner,#passmark,#warnweeks,#sm_email,[data-mg],#reset,#donext,#doreset,#backup,#w_team,#w_admin,#w_hour';
@@ -1061,7 +1069,8 @@ function applyLock(){
   document.querySelectorAll('.panel input,.panel textarea,.panel select,.panel button,.dialog button').forEach(el=>{
     const ok = el.matches(".ownsel") ? (ed && canSetOwner(el.dataset.cur)) : el.matches(FREE) ? true : el.matches(REAL_OWNER) ? role==="owner" : el.matches(OWNER_ONLY) ? SUPER() : el.matches(OWNER_ANY) ? OWNER() : el.matches(OWNER_EDIT) ? (OWNER() && ed) : ed;
     if(el.disabled===ok) el.disabled=!ok; });
-  document.querySelectorAll('label.notebtn[for^="pf"]').forEach(l=>{ l.hidden=!ed; });
+  document.querySelectorAll('label.notebtn[for^="pf"],label.notebtn[for^="df"]').forEach(l=>{ l.hidden=!ed; });
+  document.querySelectorAll('.docrm').forEach(b=>{ b.hidden=!ed; });
   const rl=document.querySelector('label[for="restore"]'); if(rl) rl.hidden=!(OWNER()&&ed);
   ["addobs","addpur","addcnt"].forEach(i=>{ const b=$(i); if(b) b.hidden=!ed; });
   const [txt,cls,label] = L.phase==="open" ? [`Edit window ${fmtWhen(L.t1)}`,"r-good","Open"]
@@ -1348,7 +1357,28 @@ function hydrate(){ document.querySelectorAll("img[data-local]:not([data-done])"
   idbGet(k).then(b=>{ if(b){ urlCache[k]=URL.createObjectURL(b); img.src=urlCache[k]; } else img.alt="Photo saved on another device"; }).catch(()=>{}); }); }
 function thumbs(k, S=st, removable=true){ return (S.photos[k]||[]).map((p,i)=>`<span class="thumb"><img ${imgSrc(p)} alt="Photo ${i+1}" data-view="1" loading="lazy">${removable?`<button type="button" class="x" data-rmk="${k}" data-rmi="${i}" aria-label="Remove photo ${i+1}">×</button>`:""}</span>`).join(""); }
 function photoLabel(k){ const key=kk(k); return `<label class="notebtn" for="pf${key}">+ Add photo</label><input type="file" id="pf${key}" accept="image/*" multiple data-pk="${k}" class="vh">`; }
-function mediaHtml(k){ return thumbs(k)+photoLabel(k); }
+const DOC_ACCEPT = ".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document";
+function docLabel(k, txt){ const key=kk(k); return `<label class="notebtn" for="df${key}">${txt||"+ Add document"}</label><input type="file" id="df${key}" accept="${DOC_ACCEPT}" multiple data-dk="${k}" class="vh">`; }
+function docChips(k, S=st, removable=true){ return ((S.docs||{})[k]||[]).map((d,i)=>`<span class="docchip"><button type="button" class="doclink" data-doc="${esc(d.p)}" title="Open ${esc(d.n)}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M8 13h8M8 17h5"/></svg><span>${esc(d.n)}</span></button>${removable?`<button type="button" class="docrm" data-rdk="${k}" data-rdi="${i}" aria-label="Remove ${esc(d.n)}">&times;</button>`:""}</span>`).join(""); }
+function mediaHtml(k){ return thumbs(k)+docChips(k)+photoLabel(k)+docLabel(k); }
+let docsP = null;
+async function handleDocs(k, files){
+  const list=[...files].slice(0,6); if(!list.length) return;
+  const bad=list.filter(f=>!/\.(pdf|docx?)$/i.test(f.name||"")), big=list.filter(f=>f.size>10*1024*1024);
+  if(bad.length){ toast("Only PDF or Word files (.pdf, .doc, .docx) can be added."); return; }
+  if(big.length){ toast("Each document must be 10 MB or smaller."); return; }
+  const api = await (docsP ||= cu("docs")); if(!api){ toast("Documents can be added on the live site only."); return; }
+  toast(list.length>1?"Adding documents…":"Adding document…"); let ok=0;
+  for(const f of list){ try{ const path=await api.upload(f, /^(0|1|o)\./.test(k)); ((st.docs ||= {})[k] ||= []).push({p:path, n:f.name, sz:f.size}); ok++; }catch(e){} }
+  save(); renderMedia(k); renderTasks.done=false; renderTasks(); refreshFirst();
+  toast(ok===list.length ? (ok>1?"Documents added.":"Document added.") : "A document couldn't be added. If this keeps happening, a super admin needs to run the documents update in Supabase.");
+}
+async function openDoc(path){
+  if(role==="viewer"||role==="loading"){ toast("Documents can only be opened by the store team, HR and super admins."); return; }
+  const w = window.open("", "_blank");
+  try{ const api = await (docsP ||= cu("docs")); const url = await api.url(path); if(w) w.location.href = url; else location.href = url; }
+  catch(e){ if(w) w.close(); toast("This document couldn't be opened. You may not have access to it."); }
+}
 function renderMedia(k){ const el=$("ph"+kk(k)); if(el) el.innerHTML = mediaHtml(k); hydrate(); }
 async function handlePhotos(k, files){
   const list=[...files].slice(0,6); if(!list.length) return; toast(list.length>1?"Adding photos…":"Adding photo…");
@@ -1775,7 +1805,7 @@ function renderTasks(){
       <div>${x.obs?obsPill(x):`<span class="pill ${x.v<=1?"r-poor":x.v===2?"r-ni":"r-mut"}">Scored ${x.v}</span>`} <span class="tiny muted">${x.obs?(obsHi(x)?"Fix within 24 hours · ":""):x.v===0?"Major: fix within 24 hours · ":x.v===1?"Significant: fix within 7 days or sooner · ":""}${esc(x.sec)}</span></div>
       <h3>${x.code} ${esc(x.text)}</h3>
       ${st.notes[x.k]?`<span class="muted">${esc(st.notes[x.k])}</span>`:""}
-      ${(st.photos[x.k]||[]).length?`<div class="media">${thumbs(x.k,st,false)}</div>`:""}
+      ${(st.photos[x.k]||[]).length||((st.docs||{})[x.k]||[]).length?`<div class="media">${thumbs(x.k,st,false)}${docChips(x.k,st,false)}</div>`:""}
       <label class="f" for="ta${key}">What the team needs to do<input type="text" id="ta${key}" data-ak="${x.k}" data-af="action" value="${esc(a.action||"")}" placeholder="e.g. Re-face aisle 3 and send a photo"></label>
       <div class="grid2">
         <label class="f" for="to${key}">Owner${ownerSel(x.k,"to"+key,a.owner)}</label>
@@ -1800,15 +1830,15 @@ const isPri = x => x.obs || (typeof x.v==="number" && x.v<=3);
 const obsHi = x => x.obs && (x.pri ? x.pri==="high" : x.by!=="sm");
 const isTop = x => obsHi(x) || x.v===0;
 const proofKey = x => x.k+"!p";
-function proofHtml(x){ const k=proofKey(x), ph=st.photos[k]||[], need=(x.status==="done"||x.status==="part") && !ph.length;
-  return `<div class="proof"><div class="proofhead"><b>Proof it's fixed</b>${need?' <span class="needc">Add a photo to prove it</span>':ph.length?` <span class="tiny" style="color:var(--good);font-weight:600">${ph.length} photo${ph.length>1?"s":""} added</span>`:' <span class="tiny muted">Photo of the fix, added by whoever marks it</span>'}</div>${ph.length?`<div class="media">${thumbs(k)}</div>`:""}${photoLabel(k).replace("+ Add photo","+ Add proof photo")}</div>`; }
+function proofHtml(x){ const k=proofKey(x), ph=st.photos[k]||[], dc=(st.docs||{})[k]||[], need=(x.status==="done"||x.status==="part") && !ph.length && !dc.length;
+  return `<div class="proof"><div class="proofhead"><b>Proof it's fixed</b>${need?' <span class="needc">Add a photo to prove it</span>':ph.length?` <span class="tiny" style="color:var(--good);font-weight:600">${ph.length} photo${ph.length>1?"s":""} added</span>`:' <span class="tiny muted">Photo of the fix, added by whoever marks it</span>'}</div>${ph.length||dc.length?`<div class="media">${thumbs(k)}${docChips(k)}</div>`:""}<div class="proofadd">${photoLabel(k).replace("+ Add photo","+ Add proof photo")}${docLabel(k)}</div></div>`; }
 function refreshFirst(){ if($("firstdlg").classList.contains("on") && firstCheck.list){ $("firstlist").innerHTML = firstCheck.list.map(i=>carryCard(st.carry[i],i,"fc")).join(""); hydrate(); applyLock(); } }
 function carryCard(x,i,pre){ return `<div class="card finding ${x.weeks>=3?"":x.status==="done"?"sev3":"sev2"} stack">
       <div class="cardhead"><h3>${x.obs ? obsPill(x)+" " : isPri(x)?`<span class="pill ${x.v<=1?"r-poor":x.v===2?"r-ni":"r-mut"}">Scored ${x.v}</span> `:""}${esc(x.code)} ${esc(x.text)}</h3>${x.weeks>=3?`<span class="pill r-crit">Repeat failure, ${x.weeks} visits: escalate</span>`:x.weeks===2?`<span class="pill r-ni">2nd visit running</span>`:""}</div>
       <span class="tiny muted">Set ${fmtDate(x.from)} · ${x.obs?"observation":"scored "+x.v} · owner ${esc(normOwner(x.owner,x.k))} · due ${esc(dueTxt(x.from))}</span>
       ${x.action?`<span>${esc(x.action)}</span>`:""}
       ${x.note?`<span class="muted">Found: ${esc(x.note)}</span>`:""}
-      ${(x.photos||[]).length?`<div class="media">${x.photos.map((p,j)=>`<span class="thumb"><img ${imgSrc(p)} alt="Photo ${j+1}" data-view="1" loading="lazy"></span>`).join("")}</div>`:""}
+      ${(x.photos||[]).length||(x.docs||[]).length?`<div class="media">${(x.photos||[]).map((p,j)=>`<span class="thumb"><img ${imgSrc(p)} alt="Photo ${j+1}" data-view="1" loading="lazy"></span>`).join("")}${docChips("_",{docs:{_:x.docs||[]}},false)}</div>`:""}
       ${proofHtml(x)}
       <div class="statusrow" role="group" aria-label="Status for ${esc(x.code)}">
         <button type="button" data-ci="${i}" data-st="done" aria-pressed="${x.status==="done"}">Done</button>
@@ -1839,7 +1869,7 @@ function renderCarry(){
       <span class="tiny muted">Set ${fmtDate(x.from)} · ${x.obs?"observation":"scored "+x.v} · owner ${esc(x.owner||"not set")} · due ${fmtDate(x.due)}</span>
       ${x.action?`<span>${esc(x.action)}</span>`:""}
       ${x.note?`<span class="muted">Found: ${esc(x.note)}</span>`:""}
-      ${(x.photos||[]).length?`<div class="media">${x.photos.map((p,j)=>`<span class="thumb"><img ${imgSrc(p)} alt="Photo ${j+1}" data-view="1" loading="lazy"></span>`).join("")}</div>`:""}
+      ${(x.photos||[]).length||(x.docs||[]).length?`<div class="media">${(x.photos||[]).map((p,j)=>`<span class="thumb"><img ${imgSrc(p)} alt="Photo ${j+1}" data-view="1" loading="lazy"></span>`).join("")}${docChips("_",{docs:{_:x.docs||[]}},false)}</div>`:""}
       ${proofHtml(x)}
       <div class="statusrow" role="group" aria-label="Status for ${esc(x.code)}">
         <button type="button" data-ci="${i}" data-st="done" aria-pressed="${x.status==="done"}">Done</button>
@@ -2107,7 +2137,7 @@ function buildCarry(S){
   const prev = S.carry||[]; const pm = carryMap(S); const tasks = taskList(S); const due = nextSat(S.date);
   const act=S.act||{}, notes=S.notes||{}, photos=S.photos||{}, sc=S.s||{};
   const carry = tasks.map(t=>{ const p=pm[t.k]; const a=act[t.k]||{};
-    return {k:t.k, code:t.code, by:t.by, pri:t.pri, text:t.text, v:t.v, note:notes[t.k]||"", action:a.action||"", owner:normOwner(a.owner,t.k), due:dueTs(S.date), weeks:p?(p.weeks||1)+1:1, obs:!!t.obs, from:S.date, photos:(photos[t.k]||[]).slice(0,3), status:""}; });
+    return {k:t.k, code:t.code, by:t.by, pri:t.pri, text:t.text, v:t.v, note:notes[t.k]||"", action:a.action||"", owner:normOwner(a.owner,t.k), due:dueTs(S.date), weeks:p?(p.weeks||1)+1:1, obs:!!t.obs, from:S.date, photos:(photos[t.k]||[]).slice(0,3), docs:((S.docs||{})[t.k]||[]).slice(0,4), status:""}; });
   prev.forEach(c=>{ if(c.status==="done" || tasks.some(t=>t.k===c.k)) return; const v=sc[c.k]; if(v==="na" || (typeof v==="number" && v>=4)) return;
     carry.push(Object.assign({}, c, {weeks:(c.weeks||1)+1, status:"", comment:""})); });
   return carry;
@@ -2494,6 +2524,8 @@ document.addEventListener("click", e=>{
   const fbb=e.target.closest("[data-fb]"); if(fbb){ if(!canEditNow()) return; st.fillBy = st.fillBy || {}; st.fillBy[fbb.dataset.fb] = fbb.dataset.v; save(); renderFillBy(); return; }
   const xp=e.target.closest("[data-xpri]"); if(xp){ const o=(st.extra||[]).find(x=>x.id===xp.dataset.xpri); if(o){ o.pri=xp.checked?"high":"normal"; save(); renderObs(); renderTasks.done=false; renderTasks(); renderFindings(); } return; }
   const xb=e.target.closest("[data-xby]"); if(xb){ const o=(st.extra||[]).find(x=>x.id===xb.dataset.xby); if(o){ o.by=xb.dataset.v; save(); renderObs(); renderTasks.done=false; renderTasks(); renderFindings(); } return; }
+  const dl=e.target.closest("[data-doc]"); if(dl){ openDoc(dl.dataset.doc); return; }
+  const rd=e.target.closest("[data-rdk]"); if(rd){ if(!canEditNow()) return; const k=rd.dataset.rdk; ((st.docs||{})[k]||[]).splice(+rd.dataset.rdi,1); save(); renderMedia(k); if(k.endsWith("!p")){ renderTasks.done=false; renderTasks(); refreshFirst(); } toast("Document removed."); return; }
   const rm=e.target.closest("[data-rmk]");
   if(rm){ const k=rm.dataset.rmk; (st.photos[k]||[]).splice(+rm.dataset.rmi,1); save(); renderMedia(k); renderFindings(); if(k.endsWith("!p")){ renderTasks.done=false; renderTasks(); refreshFirst(); } toast("Photo removed."); return; }
   const im=e.target.closest("img[data-view]");
@@ -2537,6 +2569,7 @@ document.addEventListener("change", e=>{
   const t=e.target;
   if(t.dataset.nk && document.querySelector("#p-actions.on")) renderFindings();
   if(t.dataset.pk){ handlePhotos(t.dataset.pk, t.files); t.value=""; return; }
+  if(t.dataset.dk){ handleDocs(t.dataset.dk, t.files); t.value=""; return; }
   if(t.id==="date"){ prevCache={id:null,st:null}; applyAutoFigs(); renderSections(); brandSub(); renderTasks(); renderPur(false); renderPurDaily(true); }
   if(t.id==="dsr_done"){ (st.dsrHR ||= {}).done=t.checked; dsrHead(); save(); return; }
   if(t.id==="purweek"){ st.pur.week=t.value; renderPurDaily(true); renderPur(false); save(); return; }

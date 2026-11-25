@@ -28,7 +28,7 @@
 
   /* ---------- public / private split ---------- */
   const PRIV_TOP = ["kpi", "pur", "dsr", "dsrHR", "ol"];
-  const PRIV_MAPS = ["s", "notes", "act", "photos"];
+  const PRIV_MAPS = ["s", "notes", "act", "photos", "docs"];
   const PRIV_KEY = k => /^(0|1|o)\./.test(k);           // sections 1 and 2, and the Operations checks
   const PRIV_SUM = ["sales", "target", "net", "gp", "pur", "ol"];
   const PRIV_CFG = ["budget", "catBudget", "cats", "mgmtEmails", "smEmail", "dsrFields"];
@@ -185,6 +185,23 @@
       return { id: "sb:" + path };
     }
   };
+  // Documents (PDF / Word) live in the private "documents" bucket and open through short-lived links.
+  const DOC_TYPES = { pdf: "application/pdf", doc: "application/msword", docx: "application/vnd.openxmlformats-officedocument.wordprocessingml.document" };
+  const docs = {
+    async upload(file, priv){
+      const ext = ((file.name || "").match(/\.(pdf|docx?)$/i) || [, ""])[1].toLowerCase();
+      if(!DOC_TYPES[ext]) throw new Error("type");
+      const path = `${priv ? "priv" : "sm"}/${new Date().toISOString().slice(0, 10)}/${Date.now().toString(36)}${Math.random().toString(36).slice(2, 8)}.${ext}`;
+      const r = await sb.storage.from("documents").upload(path, file, { contentType: DOC_TYPES[ext], upsert: false });
+      if(r.error) throw fail(r.error);
+      return path;
+    },
+    async url(path){
+      const r = await sb.storage.from("documents").createSignedUrl(path, 300);
+      if(r.error || !r.data) throw fail(r.error || { message: "no link" });
+      return r.data.signedUrl;
+    }
+  };
   const downloads = {
     async save({ filename, data }){
       const url = URL.createObjectURL(data); const a = document.createElement("a");
@@ -195,7 +212,7 @@
 
   window.claude = { use: async n => { await ready;
     if(n === "db") return db; if(n === "user") return user; if(n === "downloads") return downloads;
-    if(n === "assets") return CAN_EDIT() ? assets : null; return null; } };
+    if(n === "assets") return CAN_EDIT() ? assets : null; if(n === "docs") return docs; return null; } };
 
   window.photoUrl = id => C.url + "/storage/v1/object/public/photos/" + String(id).replace(/^sb:/, "").split("/").map(encodeURIComponent).join("/");
 

@@ -262,3 +262,63 @@ create policy "audit photos upload" on storage.objects for insert to authenticat
 drop policy if exists "audit photos delete" on storage.objects;
 create policy "audit photos delete" on storage.objects for delete to authenticated
   using (bucket_id = 'photos' and public.is_member());
+
+-- ================================================================ update 25 Nov 2026
+
+-- ---------------------------------------------------------------- 1. Edit window, enforced by the database
+-- Store manager and HR can change a visit until 23:59 (UK time) on the last team day
+-- (visit date + "team days" from the settings, 4 by default). After that only a super admin can.
+create or replace function public.enforce_edit_window() returns trigger
+language plpgsql security definer set search_path = public as $$
+declare d date; days int; deadline timestamptz; ds text;
+begin
+  if public.my_role() = 'super' then return new; end if;
+  -- the visit date: from the row being changed (never from the new data, so it can't be moved forward),
+  -- and for the private part, from the public row of the same slot
+  ds := case when tg_op = 'UPDATE' then old.data->>'date' else null end;
+  if ds is null or ds = '' then ds := (select data->>'date' from drafts where slot = new.slot); end if;
+  if ds is null or ds = '' then ds := new.data->>'date'; end if;
+  begin d := ds::date; exception when others then return new; end;
+  if d is null then return new; end if;
+  begin days := coalesce((select (data->>'teamDays')::int from config where id = 1), 4);
+  exception when others then days := 4; end;
+  deadline := ((d + days)::timestamp + interval '23 hours 59 minutes 59.999 seconds') at time zone 'Europe/London';
+  if now() > deadline then
+    raise exception 'The edit window for this visit closed at % (UK time). Only a super admin can make changes now.',
+      to_char(deadline at time zone 'Europe/London', 'Dy DD Mon HH24:MI') using errcode = '42501';
+  end if;
+  return new;
+end $$;
+
+drop trigger if exists drafts_window on public.drafts;
+create trigger drafts_window before insert or update on public.drafts
+  for each row execute function public.enforce_edit_window();
+drop trigger if exists drafts_private_window on public.drafts_private;
+create trigger drafts_private_window before insert or update on public.drafts_private
+  for each row execute function public.enforce_edit_window();
+
+-- ---------------------------------------------------------------- 2. Documents (PDF and Word), private
+-- Files live under "sm/..." (checks the store manager works on) or "priv/..." (sections 1-2 and Operations).
+-- Super admins and HR can open everything; store manager mode only "sm/..."; the public can open nothing.
+insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+values ('documents', 'documents', false, 10485760, array[
+  'application/pdf',
+  'application/msword',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document'])
+on conflict (id) do update set public = false,
+  file_size_limit = excluded.file_size_limit, allowed_mime_types = excluded.allowed_mime_types;
+
+drop policy if exists "audit documents upload" on storage.objects;
+create policy "audit documents upload" on storage.objects for insert to authenticated
+  with check (bucket_id = 'documents' and public.can_edit()
+              and (public.is_member() or name like 'sm/%'));
+drop policy if exists "audit documents read" on storage.objects;
+create policy "audit documents read" on storage.objects for select to authenticated
+  using (bucket_id = 'documents' and (public.is_member() or (public.my_role() = 'sm' and name like 'sm/%')));
+drop policy if exists "audit documents delete" on storage.objects;
+create policy "audit documents delete" on storage.objects for delete to authenticated
+  using (bucket_id = 'documents' and public.is_member());
+
+-- quick check: should list 1 bucket and 2 triggers
+select (select count(*) from storage.buckets where id = 'documents') as documents_bucket,
+       (select count(*) from pg_trigger where tgname in ('drafts_window','drafts_private_window')) as lock_triggers;
