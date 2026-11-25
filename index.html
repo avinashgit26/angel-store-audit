@@ -436,6 +436,15 @@ h2.hh{display:flex;align-items:center;gap:9px}
 .secarr:disabled{opacity:.3;cursor:default}
 .fbrow{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:2px 0 6px}
 .secbody>.fbrow{padding:4px 2px 2px}
+.ownfilter{display:flex;flex-wrap:wrap;align-items:center;gap:6px}
+.ownfilter button{border:1px solid var(--line);background:var(--card);border-radius:999px;padding:4px 12px;font-size:13px;font-weight:500;cursor:pointer}
+.ownfilter button b{font-weight:600;color:var(--muted);margin-left:2px}
+.ownfilter button[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
+.ownfilter button[aria-pressed="true"] b{color:inherit}
+.carrydue{flex:1 1 auto;font-size:13px;font-weight:600;color:var(--bad);background:var(--bad-bg);border-radius:8px;padding:3px 10px}
+.duebox{display:block;background:var(--paper);border:1px solid var(--line);border-radius:8px;padding:9px 12px;font-size:14px;color:var(--ink)}
+.ownsel{width:100%}
+.clearnote{font-size:12.5px;margin-top:2px;color:var(--bad)}
 </style>
 <style>
 /* ---------- dashboard layout ---------- */
@@ -647,15 +656,15 @@ body:not([data-role]) .panel{visibility:hidden}
   <!-- ACTIONS -->
   <!-- STAFF TASKS -->
   <section class="panel stack" id="p-tasks" role="tabpanel" aria-labelledby="t-tasks">
+    <div class="ownfilter" id="ownf" role="group" aria-label="Show tasks for"></div>
     <div class="card stack" data-fold>
-      <div class="cardhead"><h2>Check last visit's tasks</h2><span class="tiny muted" id="carrysum"></span></div>
+      <div class="cardhead"><h2>Check last visit's tasks</h2><span class="carrydue" id="carrydue" hidden></span><span class="tiny muted" id="carrysum"></span></div>
       <p class="tiny muted" style="margin:0">Tasks the team was given at your last visit. Mark each one today. Anything not done moves to next week, and the same issue three visits running is flagged for escalation.</p>
       <div class="stack" id="carrylist"></div>
     </div>
     <div class="card stack" data-fold>
       <div class="cardhead"><h2>Tasks for the team before your next visit</h2><span class="tiny muted" id="tasksum"></span></div>
       <p class="tiny muted" style="margin:0">Made automatically from every check scored 0 to 3 and every additional observation on the Audit tab. Give each one an owner and a deadline before you leave the store. Urgent items (scored 0 or 1) are marked in red; blank deadlines default to the Saturday after this visit, and the owner defaults to the name below.</p>
-      <label class="f" for="taskowner" style="max-width:320px">Default owner for new tasks<input type="text" id="taskowner"></label>
       <div class="actions"><button class="btn sm" type="button" id="copytasks">Copy task list for the team</button></div>
       <textarea class="report" id="tasktext" readonly hidden aria-label="Task list text"></textarea>
       <div class="stack" id="tasklist"></div>
@@ -690,10 +699,10 @@ body:not([data-role]) .panel{visibility:hidden}
       <div id="windowtext" class="tiny"></div>
       <div class="grid3" id="windowset">
         <label class="f" for="w_team">Store manager and HR can edit for (days after visit)<input type="number" min="0" max="14" inputmode="numeric" id="w_team"></label>
-        <label class="f" for="w_admin">Super admin can edit for (days after visit)<input type="number" min="0" max="21" inputmode="numeric" id="w_admin"></label>
-        <label class="f" for="w_hour">Final lock time (hour, UK time)<input type="number" min="0" max="23" inputmode="numeric" id="w_hour"></label>
+        <label class="f" for="w_admin" hidden>Super admin can edit for (days after visit)<input type="number" min="0" max="21" inputmode="numeric" id="w_admin"></label>
+        <label class="f" for="w_hour" hidden>Final lock time (hour, UK time)<input type="number" min="0" max="23" inputmode="numeric" id="w_hour"></label>
       </div>
-      <p class="tiny muted" style="margin:0">Only a super admin can change these. The store manager and HR can edit until 23:59 on the last team day. Editing then closes at the final lock time. Everything stays a draft until a super admin approves it.</p>
+      <p class="tiny muted" style="margin:0">Only a super admin can change these. The store manager and HR can edit until 23:59 on the last team day. After that, only super admins can make changes. Everything stays a draft until a super admin approves it.</p>
     </div>
     <div class="card stack" data-fold>
       <div class="cardhead"><h2>Section scores</h2><span class="tiny muted num" id="sumhead"></span></div>
@@ -983,7 +992,15 @@ const TOTAL = SECTIONS.reduce((a,s)=>a+s.c.length,0) - 1; // 1.8 is a written an
 const KEY = "angel-audit-v1", WKEY = "angel-weeks-v1", CKEY = "angel-settings-v1";
 const today = () => new Date().toISOString().slice(0,10);
 const nextSat = d => { const x=new Date((d||today())+"T12:00:00"); if(isNaN(x)) return ""; const n=((6-x.getDay())+7)%7||7; x.setDate(x.getDate()+n); return x.toISOString().slice(0,10); };
-const defOwner = () => (cfg.taskOwner||"").trim() || "Shravan";
+const ROLE_OWNERS = ["Store manager","HR","Ops"];
+const defOwnerFor = k => /^(0|1)\./.test(k||"") ? "HR" : /^o\./.test(k||"") ? "Ops" : "Store manager";
+const normOwner = (o,k) => { o=(o||"").trim(); if(ROLE_OWNERS.includes(o)) return o; if(/^hr$/i.test(o)) return "HR"; if(/^ops?$|^operations/i.test(o)) return "Ops"; if(/^store manager$/i.test(o)) return "Store manager"; return defOwnerFor(k); };
+const defOwner = () => "Store manager";
+const canSetOwner = o => role==="owner" || (role==="team" && o==="Store manager") || ((role==="super"||role==="open") && (o==="HR"||o==="Ops"));
+const ownerSel = (k, id, cur) => { const o=normOwner(cur,k); return `<select id="${id}" class="ownsel" data-ak="${k}" data-af="owner" data-cur="${o}">${ROLE_OWNERS.map(r=>`<option${r===o?" selected":""}>${r}</option>`).join("")}</select>`; };
+const dueTs = d => lockInfo({date:d}).t1;
+const dueTxt = d => { const t=dueTs(d); return isNaN(t) ? "" : fmtWhen(t); };
+const dueBox = (id, d) => `<span class="duebox" id="${id}" title="Deadline is the end of the edit window for this visit">${esc(dueTxt(d))}</span>`;
 const wkRange = (start) => { const a=new Date(start+"T12:00:00"), b=new Date(plusDays(start,6)+"T12:00:00"); if(isNaN(a)) return "";
   const sameM=a.getMonth()===b.getMonth(); const yr=a.getFullYear()!==new Date().getFullYear();
   return `${a.getDate()}${sameM?"":" "+a.toLocaleDateString("en-GB",{month:"short"})} to ${b.toLocaleDateString("en-GB",{day:"numeric",month:"short"})}${yr?" "+b.getFullYear():""}`; };
@@ -995,7 +1012,7 @@ const fmtDate = d => { const x=new Date((d||"")+"T12:00:00"); return isNaN(x)? (
 const blank = () => ({store:"Angel Supermarket",manager:"",auditor:"",date:today(),visit:"Day",s:{},notes:{},act:{},kpi:{target:"50000"},open:0,photos:{},dsr:{},ol:{},pur:{rows:[],counts:[]},carry:[],updatedAt:0});
 const STAGES = ["Recorded informal warning","First written warning","Final written warning","Dismissal"];
 const DEF_PEN = "Management will penalise the Store Manager for this week's result, in line with the company's performance policy.";
-const defCfg = () => ({taskOwner:"Shravan",passMark:95,penaltyText:DEF_PEN,budget:"25000",cats:DEF_CATS.slice(),catBudget:{},dsrFields:DEF_DSR.slice(),updatedAt:0});
+const defCfg = () => ({taskOwner:"Store manager",passMark:95,penaltyText:DEF_PEN,budget:"25000",cats:DEF_CATS.slice(),catBudget:{},dsrFields:DEF_DSR.slice(),updatedAt:0});
 const normalize = S => { S.photos ||= {}; S.dsr ||= {}; S.ol ||= {}; S.pur = Object.assign({rows:[],counts:[]}, S.pur||{}); S.carry ||= []; S.extra ||= []; S.act ||= {}; S.notes ||= {}; S.s ||= {}; S.kpi ||= {}; delete S.crit; return S; };
 const lsGet = k => { try{ const r=localStorage.getItem(k); return r?JSON.parse(r):null; }catch(e){ return null; } };
 const lsSet = (k,v) => { try{ localStorage.setItem(k, JSON.stringify(v)); }catch(e){} };
@@ -1029,10 +1046,10 @@ function lockInfo(S=st){
   const team=+(cfg.teamDays??4), adm=+(cfg.adminDays??5), hr=+(cfg.adminHour??12);
   const t1=ukTime(plusDays(S.date,team),23,59)+59999, t2=ukTime(plusDays(S.date,adm),hr,0), now=Date.now();
   if(isNaN(t1)) return {phase:"open",t1:NaN,t2:NaN};
-  return {phase: now<t1 ? "open" : now<t2 ? "admin" : "locked", t1, t2};
+  return {phase: now<t1 ? "open" : "locked", t1, t2};
 }
-function canEditNow(){ if(role==="viewer"||role==="loading") return false; if(OWNER()) return true; const L=lockInfo(); return L.phase==="open" ? true : L.phase==="admin" ? SUPER() : false; }
-const FREE = '.infobtn,.tab,.sechead,[data-jump],#copy,#showreport,#copytasks,#copymgmt,#dlmgmt,#dlcsv,#inccur,#syncnow,#photonow,#cancelreset,#cancelrestore,#mail_sm,#mail_mg,#dl_tasksheet,#firstdone,#firstall,[data-secjump],#rating,[data-bk],#lbprev,#lbnext,#lbclose,#firstclose,#firstopen,.mailcopy,.mailro,#needpill,[data-slot],#slotnew,#rp_from,#rp_to,[data-rq],#rp_tasks,#rp_taskcsv,#rp_mgmt,#rp_mgmtcsv';
+function canEditNow(){ if(role==="viewer"||role==="loading") return false; if(OWNER()) return true; return lockInfo().phase==="open"; }
+const FREE = '[data-ownf],.infobtn,.tab,.sechead,[data-jump],#copy,#showreport,#copytasks,#copymgmt,#dlmgmt,#dlcsv,#inccur,#syncnow,#photonow,#cancelreset,#cancelrestore,#mail_sm,#mail_mg,#dl_tasksheet,#firstdone,#firstall,[data-secjump],#rating,[data-bk],#lbprev,#lbnext,#lbclose,#firstclose,#firstopen,.mailcopy,.mailro,#needpill,[data-slot],#slotnew,#rp_from,#rp_to,[data-rq],#rp_tasks,#rp_taskcsv,#rp_mgmt,#rp_mgmtcsv';
 const OWNER_ONLY = '#superlist';
 const REAL_OWNER = '#openedit';
 const OWNER_ANY = '#taskowner,#passmark,#warnweeks,#sm_email,[data-mg],#reset,#donext,#doreset,#backup,#w_team,#w_admin,#w_hour';
@@ -1042,14 +1059,13 @@ function applyLock(){
   lockQueued=false;
   const ed=canEditNow(), own=SUPER(), L=lockInfo();
   document.querySelectorAll('.panel input,.panel textarea,.panel select,.panel button,.dialog button').forEach(el=>{
-    const ok = el.matches(FREE) ? true : el.matches(REAL_OWNER) ? role==="owner" : el.matches(OWNER_ONLY) ? SUPER() : el.matches(OWNER_ANY) ? OWNER() : el.matches(OWNER_EDIT) ? (OWNER() && ed) : ed;
+    const ok = el.matches(".ownsel") ? (ed && canSetOwner(el.dataset.cur)) : el.matches(FREE) ? true : el.matches(REAL_OWNER) ? role==="owner" : el.matches(OWNER_ONLY) ? SUPER() : el.matches(OWNER_ANY) ? OWNER() : el.matches(OWNER_EDIT) ? (OWNER() && ed) : ed;
     if(el.disabled===ok) el.disabled=!ok; });
   document.querySelectorAll('label.notebtn[for^="pf"]').forEach(l=>{ l.hidden=!ed; });
   const rl=document.querySelector('label[for="restore"]'); if(rl) rl.hidden=!(OWNER()&&ed);
   ["addobs","addpur","addcnt"].forEach(i=>{ const b=$(i); if(b) b.hidden=!ed; });
   const [txt,cls,label] = L.phase==="open" ? [`Edit window ${fmtWhen(L.t1)}`,"r-good","Open"]
-    : L.phase==="admin" ? [`Team editing closed. Super admin only until ${fmtWhen(L.t2)}`,"r-ni","Super admin only"]
-    : [`Editing closed ${isNaN(L.t2)?"":fmtWhen(L.t2)}. Waiting for a super admin's approval`,"r-mut","Closed"];
+    : [`Edit window closed ${fmtWhen(L.t1)}. Super admins only`,"r-ni","Super admin only"];
   const setT=(e,v)=>{ if(e && e.textContent!==v) e.textContent=v; };
   ["lockpill","lockpill2"].forEach(i=>{ const e=$(i); if(e){ setT(e,label); if(e.className!=="pill "+cls) e.className="pill "+cls; } });
   setT($("locktext"), txt);
@@ -1057,7 +1073,7 @@ function applyLock(){
   { const w=weeks.find(x=>x.id===st.date); const ap=w && (w.approved||w.submitted); const chg=ap && (st.updatedAt||0) > (w.savedAt||0)+2000;
     const [at,ac] = (!ap || chg) ? ["Awaiting approval","r-ni"] : ["Approved","r-good"];
     const e=$("apprpill"); setT(e,at); if(e && e.className!=="pill "+ac) e.className="pill "+ac; if(e){ const tt=apprTip(w,chg); if(e.title!==tt) e.title=tt; } }
-  const wt=$("windowtext"); const wh = isNaN(L.t1) ? "" : `Visit on <b>${fmtDate(st.date)}</b>. Team edits until <b>${fmtWhen(L.t1)}</b>. Super admin edits until <b>${fmtWhen(L.t2)}</b>, then editing closes. Nothing is final until a super admin approves it.`; if(wt && wt.innerHTML!==wh) wt.innerHTML=wh;
+  const wt=$("windowtext"); const wh = isNaN(L.t1) ? "" : `Visit on <b>${fmtDate(st.date)}</b>. Store manager and HR edit until <b>${fmtWhen(L.t1)}</b>. After that, only super admins can make changes. Nothing is final until a super admin approves it.`; if(wt && wt.innerHTML!==wh) wt.innerHTML=wh;
   ["w_team","w_admin","w_hour"].forEach((i,n)=>{ const e=$(i); const v=String([cfg.teamDays??4, cfg.adminDays??5, cfg.adminHour??12][n]); if(e && document.activeElement!==e && e.value!==v) e.value = v; if(false) e.value = [cfg.teamDays??4, cfg.adminDays??5, cfg.adminHour??12][n]; });
 }
 function queueLock(){ if(!lockQueued){ lockQueued=true; queueMicrotask(applyLock); } }
@@ -1584,7 +1600,7 @@ function belowBefore(id){ const from=plusDays(id,-warnWeeks()*7); return weeks.f
 function stageFor(id,total){ return isPen(total) ? Math.min(3, belowBefore(id)) : -1; }
 function penText(id, total){ id=id||st.date; total = total===undefined ? curTotal() : total; const i=stageFor(id,total); if(i<0) return "No penalty.";
   const n=belowBefore(id)+1;
-  return `Penalty for the Store Manager${st.manager?` (${st.manager})`:""}: ${STAGES[i].toUpperCase()}. This is visit ${n} below the pass mark in the last ${warnWeeks()} weeks. Follow the company's capability or disciplinary procedure under the ACAS Code: meet the Store Manager, let them respond, agree an improvement plan and confirm the outcome in writing.`
+  return `Penalty for the store manager: ${STAGES[i].toUpperCase()}. This is visit ${n} below the pass mark in the last ${warnWeeks()} weeks. Follow the company's capability or disciplinary procedure under the ACAS Code: meet the Store Manager, let them respond, agree an improvement plan and confirm the outcome in writing.`
     + (i===3 ? " Dismissal must go through a formal hearing with HR, with the right of appeal." : "")
  ; }
 const isPen = t => (+t) < passMark();
@@ -1608,8 +1624,8 @@ function renderObs(){
       <div class="media" id="ph${key}">${mediaHtml(k)}</div>
       <label class="f" for="xa${key}">What the store manager must do<input type="text" id="xa${key}" data-ak="${k}" data-af="action" value="${esc(a.action||"")}" placeholder="e.g. Get it repaired and send a photo"></label>
       <div class="grid2">
-        <label class="f" for="xw${key}">Owner<input type="text" id="xw${key}" data-ak="${k}" data-af="owner" value="${esc(a.owner||defOwner())}" placeholder="Name"></label>
-        <label class="f" for="xd${key}">Deadline<input type="date" id="xd${key}" data-ak="${k}" data-af="due" value="${esc(a.due||nextSat(st.date))}"></label>
+        <label class="f" for="xw${key}">Owner${ownerSel(k,"xw"+key,a.owner)}</label>
+        <label class="f">Deadline${dueBox("xd"+key, st.date)}</label>
       </div>
     </div>`; }).join("");
   hydrate();
@@ -1661,7 +1677,7 @@ function renderSections(){
 const SECINFO = [["How the store's sales performed in the audit week: against target, last week and last year, by category, commission income, basket size, best and worst sellers, and busy hours.", "Enter the figures and the page works out a suggested score for checks 1.1, 1.2 and 1.5. Score the rest on how well the store manager reviewed and acted on the numbers. 1.8 is a written answer and isn't scored.", "Area manager or HR, from the till reports and weekly sales summary."], ["Whether the store is making money on what it sells: gross margin, supplier prices and invoices, VAT, low-margin lines, price increases, markdowns, wastage and labour.", "Enter the figures and the page suggests a score for 2.1, 2.2, 2.5, 2.6 and 2.7. Score the others on the evidence the store manager shows you.", "Area manager or HR, from the back office, invoices and payroll."], ["Whether customers can find what they want: gaps on shelf, the out-of-stock rate, the stockroom, ordering, deliveries and overnight fill.", "Walk the shop floor and stockroom. 4 means everything in place with records to prove it. 0 means not done or no record. Enter the out-of-stock rate in 3.2 for a suggested score.", "Store manager, checked at the visit."], ["Stock that is lost or thrown away: out-of-date stock, wastage records, reductions, damages and known loss.", "Check a sample of dates and the wastage log for the audit week. Out-of-date food on sale scores 0.", "Store manager, checked at the visit."], ["How clean and hygienic the shop, chillers, stockroom, toilets and outside areas are, and whether cleaning schedules are kept.", "Score what you see on the day and the cleaning records for the audit week. 4 means spotless with signed schedules.", "Store manager, checked at the visit."], ["How the shop looks to customers: shelf layout, facings, promotions, signage, planograms and front-of-store displays.", "Score against the planogram and promotion plan. 4 means everything faced up, ticketed and on plan.", "Store manager, checked at the visit."], ["How customers are treated: greeting, queue times, staff knowledge, complaints and how they're handled.", "Watch the tills and shop floor, and check the complaints log. Enter the number of complaints in 7.4 for the KPI table.", "Store manager, checked at the visit."], ["Whether the team is working well: rotas, attendance, training, uniforms, briefings and tasks done on time.", "Check the rota, training records and how the team works during the visit.", "Store manager, checked at the visit."], ["Money handling: till counts, the safe, banking, refunds and voids, and commission services like PayPoint and lottery.", "Count a till and the safe with the manager and check the records. Any unexplained shortfall scores 0 or 1.", "Store manager, checked at the visit."], ["The law and food safety: temperature checks, allergens, age-restricted sales, licences, fire safety and health and safety records.", "Check the logs for every day of the audit week. A missing record or a blocked fire exit scores 0.", "Store manager, checked at the visit."], ["Protecting stock, cash and people: CCTV working and recording, alarms, door security, incident logs and theft prevention.", "Check CCTV playback and the incident log for the audit week.", "Store manager, checked at the visit."], ["Whether prices are right: shelf-edge labels match the till, promotions scan correctly, and price changes are actioned.", "Scan a sample of 20 lines at the till. 4 means every one correct.", "Store manager, checked at the visit."], ["Tills, scanners, card machines, back-office systems and internet all working, with faults reported.", "Check every till and device is working and any faults have a reference number.", "Store manager, checked at the visit."], ["Online and delivery orders (website and apps such as Deliveroo and Just Eat): picked on time, accurately, with stock and prices kept up to date.", "Check the order history and complaints for the audit week.", "Store manager, checked at the visit."], ["Equipment and building: chillers, freezers, lights, doors, waste collection and repairs reported and followed up.", "Walk the building and check the repairs log. A chiller out of temperature range scores 0.", "Store manager, checked at the visit."]];
 function secInfoHtml(i){ const x=SECINFO[i]; if(!x) return ""; const S=SECTIONS[i];
   return `<div><b>What this section means:</b> ${esc(x[0])}</div><div><b>How to score:</b> ${esc(x[1])} Every check is scored 0 to 4 (4 is fully compliant with evidence, 0 is failed or missing), or N/A when it doesn't apply. Any 0, 1, 2 or N/A needs a comment.</div><div><b>Worth:</b> ${S.w} of the 100 points, across ${S.c.length} checks. <b>Filled in by:</b> ${esc(x[2])}</div>`; }
-function noteBox(k,note){ return `<textarea id="n${kk(k)}" data-nk="${k}" rows="1" placeholder="${needsNote(k)?"Comment required: what did you find?":"What did you find?"}" aria-label="Note for ${k}">${esc(note)}</textarea><span class="needc" id="nc${kk(k)}"${needComment(st,k)?"":" hidden"}>Comment needed: scores of 0, 1, 2 and N/A must be explained</span>`; }
+function noteBox(k,note){ return `<textarea id="n${kk(k)}" data-nk="${k}" rows="1" placeholder="${needsNote(k)?"Comment required: what did you find?":"What did you find?"}" aria-label="Note for ${k}">${esc(note)}</textarea><button type="button" class="notebtn clearnote" data-clearnote="${k}"${note?"":" hidden"}>Clear comment</button><span class="needc" id="nc${kk(k)}"${needComment(st,k)?"":" hidden"}>Comment needed: scores of 0, 1, 2 and N/A must be explained</span>`; }
 const needsNote = (k,S=st) => { if(TEXTONLY.has(k)) return false; const v=S.s[k]; return v==="na" || (typeof v==="number" && v<=2); };
 const needComment = (S,k) => needsNote(k,S) && !String((S.notes||{})[k]||"").trim();
 const ALLK = () => ITEMS.map(x=>x.k).concat(OPS.map((_,j)=>"o."+j));
@@ -1725,8 +1741,8 @@ function renderFindings(){
       ${(st.photos[x.k]||[]).length?`<div class="media">${thumbs(x.k,st,false)}</div>`:""}
       <label class="f" for="aa${key}">Action<input type="text" id="aa${key}" data-ak="${x.k}" data-af="action" value="${esc(a.action||"")}" placeholder="What will be done"></label>
       <div class="grid2">
-        <label class="f" for="ao${key}">Owner<input type="text" id="ao${key}" data-ak="${x.k}" data-af="owner" value="${esc(a.owner||defOwner())}" placeholder="Name"></label>
-        <label class="f" for="ad${key}">Deadline<input type="date" id="ad${key}" data-ak="${x.k}" data-af="due" value="${esc(a.due||nextSat(st.date))}"></label>
+        <label class="f" for="ao${key}">Owner${ownerSel(x.k,"ao"+key,a.owner)}</label>
+        <label class="f">Deadline${dueBox("ad"+key, st.date)}</label>
       </div>
     </div>`;}).join("");
   hydrate();
@@ -1746,13 +1762,15 @@ function bucketBar(items, which){ const n={}, d={}; items.forEach(x=>{ n[x.b]=(n
 function renderTasks(){
   const t=taskList(); const due=nextSat(st.date);
   const b=$("tcount"); b.hidden=!t.length; b.textContent=t.length;
-  $("tasksum").textContent = t.length ? `${t.length} task${t.length>1?"s":""}, due by ${fmtDate(due)}` : "";
+  $("tasksum").textContent = t.length ? `${t.length} task${t.length>1?"s":""}, due by ${dueTxt(st.date)}` : "";
   const active=document.activeElement && document.activeElement.id;
   const onTasks = $("p-tasks").classList.contains("on");
   if(!onTasks && renderTasks.done) { renderCarryHead(); return; }
   renderTasks.done = true;
-  const tb = bucketBar(t.map(x=>({b:bucketOf(x)})), "t");
-  $("tasklist").innerHTML = t.length ? tb.html + t.filter(x=>bucketOf(x)===tb.cur).sort((a,b)=>obsRank(a)-obsRank(b)).map(x=>{ const a=st.act[x.k]||{}; const key=kk(x.k);
+  renderOwnFilter();
+  const tf = t.filter(x=>ownOk(normOwner((st.act[x.k]||{}).owner,x.k)));
+  const tb = bucketBar(tf.map(x=>({b:bucketOf(x)})), "t");
+  $("tasklist").innerHTML = !t.length ? `<div class="empty muted">No tasks yet. Every check you score 0, 1, 2 or 3 appears here.</div>` : !tf.length ? `<div class="empty muted">No tasks for ${esc(ownfGet())} this week.</div>` : tb.html + tf.filter(x=>bucketOf(x)===tb.cur).sort((a,b)=>obsRank(a)-obsRank(b)).map(x=>{ const a=st.act[x.k]||{}; const key=kk(x.k);
     return `<div class="card finding ${(x.obs?obsHi(x):x.v<=1)?"":x.v===2||x.obs?"sev2":"sev3"} stack">
       <div>${x.obs?obsPill(x):`<span class="pill ${x.v<=1?"r-poor":x.v===2?"r-ni":"r-mut"}">Scored ${x.v}</span>`} <span class="tiny muted">${x.obs?(obsHi(x)?"Fix within 24 hours · ":""):x.v===0?"Major: fix within 24 hours · ":x.v===1?"Significant: fix within 7 days or sooner · ":""}${esc(x.sec)}</span></div>
       <h3>${x.code} ${esc(x.text)}</h3>
@@ -1760,15 +1778,24 @@ function renderTasks(){
       ${(st.photos[x.k]||[]).length?`<div class="media">${thumbs(x.k,st,false)}</div>`:""}
       <label class="f" for="ta${key}">What the team needs to do<input type="text" id="ta${key}" data-ak="${x.k}" data-af="action" value="${esc(a.action||"")}" placeholder="e.g. Re-face aisle 3 and send a photo"></label>
       <div class="grid2">
-        <label class="f" for="to${key}">Owner<input type="text" id="to${key}" data-ak="${x.k}" data-af="owner" value="${esc(a.owner||defOwner())}" placeholder="Name"></label>
-        <label class="f" for="td${key}">Deadline<input type="date" id="td${key}" data-ak="${x.k}" data-af="due" value="${esc(a.due||nextSat(st.date))}"></label>
+        <label class="f" for="to${key}">Owner${ownerSel(x.k,"to"+key,a.owner)}</label>
+        <label class="f">Deadline${dueBox("td"+key, st.date)}</label>
       </div>
-    </div>`;}).join("") : `<div class="empty muted">No tasks yet. Every check you score 0, 1, 2 or 3 appears here.</div>`;
+    </div>`;}).join("");
   renderCarry();
   hydrate();
   if(active && $(active)) $(active).focus();
 }
-function renderCarryHead(){ const c=st.carry; const m=c.filter(x=>x.status).length; $("carrysum").textContent = c.length ? `${m} of ${c.length} checked` : ""; }
+let OWNF = null;
+function ownfGet(){ if(OWNF) return OWNF; let v=""; try{ v=localStorage.getItem("ownf")||""; }catch(e){} if(["All",...ROLE_OWNERS].includes(v)) return OWNF=v; return role==="team" ? "Store manager" : "All"; }
+const ownOk = o => ownfGet()==="All" || o===ownfGet();
+function renderOwnFilter(){ const el=$("ownf"); if(!el) return; const cur=ownfGet(), n={All:0};
+  taskList().forEach(x=>{ const o=normOwner((st.act[x.k]||{}).owner,x.k); n[o]=(n[o]||0)+1; n.All++; });
+  (st.carry||[]).forEach(x=>{ const o=normOwner(x.owner,x.k); n[o]=(n[o]||0)+1; n.All++; });
+  const h=`<span class="tiny muted">Show tasks for</span>${["All",...ROLE_OWNERS].map(r=>`<button type="button" data-ownf="${r}" aria-pressed="${r===cur}">${r} <b>${n[r]||0}</b></button>`).join("")}`;
+  if(el.innerHTML!==h) el.innerHTML=h; }
+function renderCarryHead(){ const c=st.carry; const m=c.filter(x=>x.status).length; $("carrysum").textContent = c.length ? `${m} of ${c.length} checked` : "";
+  const cd=$("carrydue"); if(cd){ const d=c.length ? dueTxt(c[0].from) : ""; cd.hidden=!d; const tx = d ? `Action these before starting next week's tasks. Due by ${d}` : ""; if(cd.textContent!==tx) cd.textContent=tx; } }
 const isPri = x => x.obs || (typeof x.v==="number" && x.v<=3);
 const obsHi = x => x.obs && (x.pri ? x.pri==="high" : x.by!=="sm");
 const isTop = x => obsHi(x) || x.v===0;
@@ -1778,7 +1805,7 @@ function proofHtml(x){ const k=proofKey(x), ph=st.photos[k]||[], need=(x.status=
 function refreshFirst(){ if($("firstdlg").classList.contains("on") && firstCheck.list){ $("firstlist").innerHTML = firstCheck.list.map(i=>carryCard(st.carry[i],i,"fc")).join(""); hydrate(); applyLock(); } }
 function carryCard(x,i,pre){ return `<div class="card finding ${x.weeks>=3?"":x.status==="done"?"sev3":"sev2"} stack">
       <div class="cardhead"><h3>${x.obs ? obsPill(x)+" " : isPri(x)?`<span class="pill ${x.v<=1?"r-poor":x.v===2?"r-ni":"r-mut"}">Scored ${x.v}</span> `:""}${esc(x.code)} ${esc(x.text)}</h3>${x.weeks>=3?`<span class="pill r-crit">Repeat failure, ${x.weeks} visits: escalate</span>`:x.weeks===2?`<span class="pill r-ni">2nd visit running</span>`:""}</div>
-      <span class="tiny muted">Set ${fmtDate(x.from)} · ${x.obs?"observation":"scored "+x.v} · owner ${esc(x.owner||defOwner())} · due ${fmtDate(x.due)}</span>
+      <span class="tiny muted">Set ${fmtDate(x.from)} · ${x.obs?"observation":"scored "+x.v} · owner ${esc(normOwner(x.owner,x.k))} · due ${esc(dueTxt(x.from))}</span>
       ${x.action?`<span>${esc(x.action)}</span>`:""}
       ${x.note?`<span class="muted">Found: ${esc(x.note)}</span>`:""}
       ${(x.photos||[]).length?`<div class="media">${x.photos.map((p,j)=>`<span class="thumb"><img ${imgSrc(p)} alt="Photo ${j+1}" data-view="1" loading="lazy"></span>`).join("")}</div>`:""}
@@ -1805,8 +1832,8 @@ function firstCheck(force){
 function renderCarry(){
   renderCarryHead();
   const c=st.carry;
-  if(true){ const ord=carryOrder(), cb=bucketBar(ord.map(i=>({b:bucketOf(c[i]), done:!!c[i].status})), "c");
-    $("carrylist").innerHTML = c.length ? cb.html + ord.filter(i=>bucketOf(c[i])===cb.cur).map(i=>carryCard(c[i],i,"cc")).join("") : `<div class="empty muted">Nothing to check yet. After you finish a visit, its tasks show up here at the next one.</div>`; return; }
+  if(true){ const ord=carryOrder().filter(i=>ownOk(normOwner(c[i].owner,c[i].k))), cb=bucketBar(ord.map(i=>({b:bucketOf(c[i]), done:!!c[i].status})), "c");
+    $("carrylist").innerHTML = c.length && !ord.length ? `<div class="empty muted">No tasks from last visit for ${esc(ownfGet())}.</div>` : c.length ? cb.html + ord.filter(i=>bucketOf(c[i])===cb.cur).map(i=>carryCard(c[i],i,"cc")).join("") : `<div class="empty muted">Nothing to check yet. After you finish a visit, its tasks show up here at the next one.</div>`; return; }
   $("carrylist").innerHTML = c.length ? c.map((x,i)=>`<div class="card finding ${x.weeks>=3?"":x.status==="done"?"sev3":"sev2"} stack">
       <div class="cardhead"><h3>${esc(x.code)} ${esc(x.text)}</h3>${x.weeks>=3?`<span class="pill r-crit">Repeat failure, ${x.weeks} visits: escalate</span>`:x.weeks===2?`<span class="pill r-ni">2nd visit running</span>`:""}</div>
       <span class="tiny muted">Set ${fmtDate(x.from)} · ${x.obs?"observation":"scored "+x.v} · owner ${esc(x.owner||"not set")} · due ${fmtDate(x.due)}</span>
@@ -1826,7 +1853,7 @@ function taskText(){
   const t=taskList().sort((a,b)=>a.v-b.v); const due=nextSat(st.date);
   const out=[`${st.store} - tasks before next visit`, `Set by ${st.auditor||"Area manager"} on ${fmtDate(st.date)}. Please complete and send photo evidence.`, ""];
   if(!t.length) out.push("No tasks this week. Well done.");
-  t.forEach((x,i)=>{ const a=st.act[x.k]||{}; out.push(`${i+1}. ${x.text}`); if(st.notes[x.k]) out.push(`   Comment: ${st.notes[x.k]}`); if(a.action) out.push(`   To do: ${a.action}`); out.push(`   Owner: ${a.owner||defOwner()} | Due: ${fmtDate(a.due||due)}`); const np=(st.photos[x.k]||[]).length; if(np) out.push(`   Photos: ${np} (see the task sheet)`); });
+  t.forEach((x,i)=>{ const a=st.act[x.k]||{}; out.push(`${i+1}. ${x.text}`); if(st.notes[x.k]) out.push(`   Comment: ${st.notes[x.k]}`); if(a.action) out.push(`   To do: ${a.action}`); out.push(`   Owner: ${normOwner(a.owner,x.k)} | Due: ${dueTxt(st.date)}`); const np=(st.photos[x.k]||[]).length; if(np) out.push(`   Photos: ${np} (see the task sheet)`); });
   const open=st.carry.filter(c=>c.status==="not"||c.status==="part");
   if(open.length){ out.push("","Still open from last visit:"); open.forEach(c=>{ out.push(` - ${c.text}${c.weeks>=2?` (${c.weeks} visits running)`:""}`); if(c.comment) out.push(`   Comment: ${c.comment}`); if((c.photos||[]).length) out.push(`   Photos: ${c.photos.length} (see the task sheet)`); }); }
   return out.join("\n");
@@ -2080,7 +2107,7 @@ function buildCarry(S){
   const prev = S.carry||[]; const pm = carryMap(S); const tasks = taskList(S); const due = nextSat(S.date);
   const act=S.act||{}, notes=S.notes||{}, photos=S.photos||{}, sc=S.s||{};
   const carry = tasks.map(t=>{ const p=pm[t.k]; const a=act[t.k]||{};
-    return {k:t.k, code:t.code, by:t.by, pri:t.pri, text:t.text, v:t.v, note:notes[t.k]||"", action:a.action||"", owner:a.owner||defOwner(), due:a.due||due, weeks:p?(p.weeks||1)+1:1, obs:!!t.obs, from:S.date, photos:(photos[t.k]||[]).slice(0,3), status:""}; });
+    return {k:t.k, code:t.code, by:t.by, pri:t.pri, text:t.text, v:t.v, note:notes[t.k]||"", action:a.action||"", owner:normOwner(a.owner,t.k), due:dueTs(S.date), weeks:p?(p.weeks||1)+1:1, obs:!!t.obs, from:S.date, photos:(photos[t.k]||[]).slice(0,3), status:""}; });
   prev.forEach(c=>{ if(c.status==="done" || tasks.some(t=>t.k===c.k)) return; const v=sc[c.k]; if(v==="na" || (typeof v==="number" && v>=4)) return;
     carry.push(Object.assign({}, c, {weeks:(c.weeks||1)+1, status:"", comment:""})); });
   return carry;
@@ -2233,7 +2260,7 @@ function report(){
 const ART_URL = AUDIT_CONFIG.site;
 const okMail = e => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e||"");
 function fillPenalty(){
-  { const o=$("taskowner"); if(o && document.activeElement!==o) o.value=defOwner(); }
+
   const pm=$("passmark");
   if(pm && document.activeElement!==pm) pm.value=String(passMark()); const ww=$("warnweeks"); if(ww && document.activeElement!==ww) ww.value=String(warnWeeks());
   const lb=$("ladderbody"); if(lb){ const cur=stageFor(st.date,curTotal()); lb.innerHTML=STAGES.map((x,i)=>`<tr${i===cur?' class="here"':""}><td>${i===3?"4th or more":["1st","2nd","3rd"][i]}</td><td><b>${x}</b>${i===cur?' <span class="pill r-crit">This visit</span>':""}</td></tr>`).join(""); }
@@ -2285,7 +2312,7 @@ async function taskSheet(){
   for(const [i,x] of t.entries()){ const a=st.act[x.k]||{};
     rows.push(`<div class="t ${x.v<=1?"u":""}"><h3>${i+1}. ${esc(x.text)}</h3><p class="m">${esc(x.code)} · ${x.obs?"Observation":"Scored "+x.v+" of 5"}${x.v<=1?" · URGENT":""}</p>
       ${st.notes[x.k]?`<p><b>Comment:</b> ${esc(st.notes[x.k])}</p>`:""}${a.action?`<p><b>To do:</b> ${esc(a.action)}</p>`:""}
-      <p><b>Owner:</b> ${esc(a.owner||defOwner())} · <b>Due:</b> ${esc(fmtDate(a.due||due))}</p>${await cnt(st.photos[x.k])}</div>`); }
+      <p><b>Owner:</b> ${esc(normOwner(a.owner,x.k))} · <b>Due:</b> ${esc(dueTxt(st.date))}</p>${await cnt(st.photos[x.k])}</div>`); }
   const open=st.carry.filter(c=>c.status==="not"||c.status==="part"); const orows=[];
   for(const c of open) orows.push(`<div class="t"><h3>${esc(c.text)}</h3><p class="m">${c.status==="part"?"Partly done":"Not done"}${c.weeks>=2?` · ${c.weeks} visits running`:""}</p>${c.comment?`<p><b>Comment:</b> ${esc(c.comment)}</p>`:""}${await cnt(c.photos)}</div>`);
   const html=`<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${esc(st.store)} tasks ${esc(st.date)}</title>
@@ -2319,9 +2346,9 @@ function rpOutcome(w, k){
 }
 function rpTasksOf(w){
   const S=wkState(w);
-  if(!S) return (w.sum.issues||[]).map(x=>({k:x.k, code:x.code, text:x.text, v:x.v, obs:x.obs, note:x.note, action:"", owner:defOwner(), due:nextSat(w.id), photos:x.photos||[]}));
+  if(!S) return (w.sum.issues||[]).map(x=>({k:x.k, code:x.code, text:x.text, v:x.v, obs:x.obs, note:x.note, action:"", owner:defOwnerFor(x.k), due:dueTxt(w.id), photos:x.photos||[]}));
   return taskList(S).sort((a,b)=>a.v-b.v).map(x=>{ const a=(S.act||{})[x.k]||{};
-    return {k:x.k, code:x.code, text:x.text, v:x.v, obs:!!x.obs, note:(S.notes||{})[x.k]||"", action:a.action||"", owner:a.owner||defOwner(), due:a.due||nextSat(w.id), photos:((S.photos||{})[x.k]||[]).slice(0,4)}; });
+    return {k:x.k, code:x.code, text:x.text, v:x.v, obs:!!x.obs, note:(S.notes||{})[x.k]||"", action:a.action||"", owner:normOwner(a.owner,x.k), due:dueTxt(w.id), photos:((S.photos||{})[x.k]||[]).slice(0,4)}; });
 }
 const rpLogo = () => { const i=document.querySelector(".logo img"); return i?`<img class="logo" src="${i.src}" alt="Angel Supermarket" width="120" height="53">`:""; };
 const rpCss = `body{font:14px/1.45 system-ui,-apple-system,Segoe UI,sans-serif;color:#1d1d1b;background:#fff;max-width:1000px;margin:0 auto;padding:20px 16px}
@@ -2454,6 +2481,8 @@ document.addEventListener("click", e=>{
     if(w.querySelector("textarea")){ const ta=w.querySelector("textarea"); ta.placeholder=needsNote(k)?"Comment required: what did you find?":"What did you find?"; if(!$("nc"+kk(k))) ta.insertAdjacentHTML("afterend",`<span class="needc" id="nc${kk(k)}" hidden>Comment needed: scores of 0, 1, 2 and N/A must be explained</span>`); }
     updNeed(k);
     refresh(); return; }
+  const of=e.target.closest("[data-ownf]"); if(of){ OWNF=of.dataset.ownf; try{ localStorage.setItem("ownf",OWNF); }catch(e){} renderTasks.done=false; renderTasks(); applyLock(); return; }
+  const cn=e.target.closest("[data-clearnote]"); if(cn){ if(!canEditNow()) return; const k=cn.dataset.clearnote; delete st.notes[k]; const ta=$("n"+kk(k)); if(ta){ ta.value=""; ta.focus(); } cn.hidden=true; updNeed(k); save(); refresh(); return; }
   const nb=e.target.closest(".notebtn[data-note]");
   if(nb){ const k=nb.dataset.note; const w=$("nw"+kk(k)); w.innerHTML=noteBox(k,""); w.querySelector("textarea").focus(); return; }
   const vb=e.target.closest("#visit button");
@@ -2490,8 +2519,9 @@ document.addEventListener("click", e=>{
 document.addEventListener("keydown", e=>{ if((e.key==="Enter"||e.key===" ") && e.target.classList && (e.target.classList.contains("foldhead")||e.target.classList.contains("sechead"))){ e.preventDefault(); e.target.click(); } });
 document.addEventListener("input", e=>{
   const t=e.target;
-  if(t.dataset.nk){ st.notes[t.dataset.nk]=t.value; updNeed(t.dataset.nk); save(); return; }
-  if(t.dataset.ak){ (st.act[t.dataset.ak] ||= {})[t.dataset.af]=t.value; save(); return; }
+  if(t.dataset.nk){ st.notes[t.dataset.nk]=t.value; updNeed(t.dataset.nk); { const cb=t.parentNode.querySelector(".clearnote"); if(cb) cb.hidden=!t.value; } save(); return; }
+  if(t.dataset.ak){ if(t.classList.contains("ownsel")){ if(!canSetOwner(t.dataset.cur)){ t.value=t.dataset.cur; toast("Only the current owner or a super admin can change this."); return; } t.dataset.cur=t.value; (st.act[t.dataset.ak] ||= {}).owner=t.value; save(); renderTasks.done=false; renderTasks(); renderOwnFilter(); applyLock(); return; }
+    (st.act[t.dataset.ak] ||= {})[t.dataset.af]=t.value; save(); return; }
   if(t.dataset.kk){ st.kpi[t.dataset.kk]=t.value; updateFigs(); renderPur(false); renderKpiTable(); save(); return; }
   if(t.dataset.dsr!==undefined){ const name=cfg.dsrFields[+t.dataset.dsr]; (st.dsr[name] ||= {})[t.dataset.day]=t.value; dsrTotal(+t.dataset.dsr); dsrDays(); save(); return; }
   if(["dsr_issues","dsr_by"].includes(t.id)){ (st.dsrHR ||= {})[t.id.slice(4)]=t.value; dsrHead(); save(); return; }
