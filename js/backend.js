@@ -5,6 +5,25 @@
 (function(){
   "use strict";
   const C = window.AUDIT_CONFIG;
+  // Safety copy of what this browser holds, taken before the page loads anything from the database.
+  // Kept on this device (last 10 copies) and sent to the database's device_backups table once signed in,
+  // so entries that only ever reached this browser can be recovered by a super admin.
+  const DEV_KEYS = { draft: "angel-audit-v1", next: "angel-audit-v1-next" };
+  const DEV_LIST = "angel-device-copies-v1", DEV_SENT = "angel-device-copies-sent-v1";
+  const hashStr = t => { let h = 5381; for(let i = 0; i < t.length; i++) h = ((h << 5) + h + t.charCodeAt(i)) | 0; return (h >>> 0).toString(36) + t.length.toString(36); };
+  const meaningful = S => { if(!S || typeof S !== "object") return false;
+    const n = o => o && typeof o === "object" ? Object.keys(o).length : 0;
+    return n(S.s) || n(S.notes) || n(S.kpi) > 1 || n(S.dsrHR) || n(S.ol) || n(S.pur && S.pur.daily) || (S.pur && S.pur.overReason) || (S.extra || []).length || (S.carry || []).some(c => c && (c.status || c.comment)); };
+  function keepDeviceCopy(slot, raw, why){
+    try{
+      if(!raw) return; const S = JSON.parse(raw); if(!meaningful(S)) return;
+      const h = hashStr(raw); let L = []; try{ L = JSON.parse(localStorage.getItem(DEV_LIST) || "[]") || []; }catch(e){}
+      if(L.some(x => x.h === h)) return;
+      L.push({ h, slot, at: Date.now(), why: why || "page opened", raw }); while(L.length > 10) L.shift();
+      try{ localStorage.setItem(DEV_LIST, JSON.stringify(L)); }catch(e){ L.splice(0, L.length - 3); try{ localStorage.setItem(DEV_LIST, JSON.stringify(L)); }catch(e2){} }
+    }catch(e){}
+  }
+  try{ Object.keys(DEV_KEYS).forEach(sl => keepDeviceCopy(sl, localStorage.getItem(DEV_KEYS[sl]))); }catch(e){}
   // Did this page open from a sign-in email link? Read it before the library tidies the address.
   const linkErr = (() => { const h = new URLSearchParams(location.hash.slice(1) + "&" + location.search.slice(1)); return h.get("error_description") || h.get("error"); })();
   const fromLink = /access_token=|[?&]code=|token_hash=/.test(location.href);
@@ -24,7 +43,20 @@
       else if(MEMBER()){ try{ await sb.rpc("log_event", { p_action: "Signed in", p_details: null, p_visit: null }); }catch(e){} window.AUTH.linkNote = "Signed in as " + (me.name || me.email) + "."; }
       else if(me.role !== "sm"){ window.AUTH.linkNote = "This email hasn't been given access. Ask a super admin to add it. You can still view the audit."; try{ await sb.auth.signOut(); }catch(e){} me = { role: "viewer", email: "", actor: null, name: null }; }
     }
+    if(CAN_EDIT()) setTimeout(sendDeviceCopies, 1500);
     return me; })();
+
+  async function sendDeviceCopies(){
+    let L = [], sent = []; try{ L = JSON.parse(localStorage.getItem(DEV_LIST) || "[]") || []; sent = JSON.parse(localStorage.getItem(DEV_SENT) || "[]") || []; }catch(e){}
+    for(const x of L){
+      if(sent.includes(x.h)) continue;
+      let S = null; try{ S = JSON.parse(x.raw); }catch(e){ continue; }
+      const r = await sb.from("device_backups").insert({ slot: x.slot, visit: S.date || null, local_updated_at: +S.updatedAt || 0, note: x.why || null, data: S });
+      if(r.error) return;                     // table not set up yet, or offline: try again next time the page opens
+      sent.push(x.h); while(sent.length > 50) sent.shift();
+      try{ localStorage.setItem(DEV_SENT, JSON.stringify(sent)); }catch(e){}
+    }
+  }
 
   /* ---------- public / private split ---------- */
   const PRIV_TOP = ["kpi", "pur", "dsr", "dsrHR", "ol"];
@@ -73,22 +105,36 @@
     if(p.error) throw fail(p.error);
     let priv = null, privAt = 0;
     if(MEMBER()){ const q = await sb.from("drafts_private").select("*").eq("slot", slot).maybeSingle(); if(q.data){ priv = q.data.data; privAt = +q.data.updated_at || 0; } }
-    if(!p.data) return snap(null);
+    if(!p.data) return { exists: false, data: () => ({ rowAt: 0 }) };
     const empty = !p.data.data || !Object.keys(p.data.data).length;
     const at = Math.max(+p.data.updated_at || 0, privAt);
-    return snap({ json: empty ? "" : JSON.stringify(joinState(p.data.data, priv)), updatedAt: at, updatedBy: p.data.updated_by });
+    return snap({ json: empty ? "" : JSON.stringify(joinState(p.data.data, priv)), updatedAt: at, updatedBy: p.data.updated_by, rowAt: +p.data.updated_at || 0 });
   }
+  // v.baseAt = the version of the row this browser last read. When given, the save only goes through if nobody
+  // else has saved since; otherwise it fails with code "conflict" and the page merges the newer copy first.
+  const conflict = () => { const e = new Error("someone else saved first"); e.code = "conflict"; return e; };
   async function setDraft(slot, v){
-    const S = v.json ? JSON.parse(v.json) : null; const at = v.updatedAt || Date.now();
+    const S = v.json ? JSON.parse(v.json) : null;
+    const hasBase = typeof v.baseAt === "number";
+    const at = Math.max(v.updatedAt || Date.now(), hasBase ? v.baseAt + 1 : 0);
     if(!S){
       const r = await sb.from("drafts").upsert({ slot, data: {}, updated_at: at }); if(r.error) throw fail(r.error);
-      if(MEMBER()) await sb.from("drafts_private").upsert({ slot, data: {}, updated_at: at });
-      return;
+      if(MEMBER()){ const q = await sb.from("drafts_private").upsert({ slot, data: {}, updated_at: at }); if(q.error) throw fail(q.error); }
+      return at;
     }
     const { pub, priv } = splitState(S);
     if(!MEMBER() && S._hidden) pub._hidden = S._hidden;     // the store manager keeps the sales section results as they were
-    const r = await sb.from("drafts").upsert({ slot, data: pub, updated_at: at }); if(r.error) throw fail(r.error);
+    if(!hasBase){ const r = await sb.from("drafts").upsert({ slot, data: pub, updated_at: at }); if(r.error) throw fail(r.error); }
+    else if(v.baseAt === 0){
+      const r = await sb.from("drafts").insert({ slot, data: pub, updated_at: at });
+      if(r.error){ if(r.error.code === "23505") throw conflict(); throw fail(r.error); }
+    } else {
+      const r = await sb.from("drafts").update({ data: pub, updated_at: at }).eq("slot", slot).eq("updated_at", v.baseAt).select("slot");
+      if(r.error) throw fail(r.error);
+      if(!r.data || !r.data.length) throw conflict();
+    }
     if(MEMBER()){ const q = await sb.from("drafts_private").upsert({ slot, data: priv, updated_at: at }); if(q.error) throw fail(q.error); }
+    return at;
   }
   async function getCfg(){
     const p = await sb.from("config").select("*").eq("id", 1).maybeSingle(); if(p.error) throw fail(p.error);
@@ -140,6 +186,15 @@
     const what = (v.what || []).map(String);
     const r = await sb.rpc("log_event", { p_action: what.join("; ").slice(0, 500), p_details: what, p_visit: v.visit || null });
     if(r.error) throw fail(r.error);
+  }
+
+  async function listBackups(){
+    if(!MEMBER()) return [];
+    const r = await sb.from("device_backups").select("id,at,actor,role,slot,visit,local_updated_at,note,data").order("at", { ascending: false }).limit(60);
+    if(r.error) throw fail(r.error);
+    const h = await sb.from("drafts_history").select("id,at,slot,part,updated_at,updated_by,data").order("at", { ascending: false }).limit(60);
+    const hist = h.error ? [] : (h.data || []);
+    return { backups: r.data || [], history: hist, historyOk: !h.error };
   }
 
   const db = {
@@ -218,7 +273,7 @@
 
   /* ---------- sign in, store manager mode, people ---------- */
   window.AUTH = {
-    sb, ready, get me(){ return me; }, refreshMe, MEMBER, CAN_EDIT,
+    sb, ready, get me(){ return me; }, refreshMe, MEMBER, CAN_EDIT, listBackups, keepDeviceCopy, sendDeviceCopies,
     async sendCode(email){
       const r = await sb.auth.signInWithOtp({ email: email.trim().toLowerCase(), options: { shouldCreateUser: true, emailRedirectTo: location.origin + location.pathname } });
       if(r.error) throw fail(r.error);
