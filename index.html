@@ -375,6 +375,7 @@ body.slot-next #saveweek,body.slot-next #reset{display:none}
 .ladder td,.ladder th{padding:6px 8px;text-align:left}.ladder tr.here td{background:var(--bad-bg)}
 details summary{cursor:pointer;color:var(--accent);font-weight:600;font-size:13.5px}
 .sync{font-size:12px;color:var(--muted)}
+#sync.syncerr{color:var(--bad,#c0392b);font-weight:600}
 .listplain{margin:0;padding-left:18px}
 .listplain li{margin:3px 0}
 .actions.oneline{flex-wrap:nowrap;overflow-x:auto}.actions.oneline .btn{white-space:nowrap;flex:0 0 auto}
@@ -737,6 +738,12 @@ body:not([data-role]) .panel{visibility:hidden}
       </div>
       <div class="actions"><button class="btn sm ghost" type="button" id="pp_pin">Change PIN</button></div>
     </div>
+    <div class="card stack" data-fold id="reccard" hidden>
+      <div class="cardhead"><h2>Recover entries</h2><span class="tiny muted">Super admins only</span></div>
+      <p class="tiny muted" style="margin:0">Copies of the audit kept from each person's browser and from earlier saves. "Add missing entries" only fills boxes that are empty in the week you have open; it never replaces anything already entered.</p>
+      <div class="actions"><button class="btn sm ghost" type="button" id="rec_load">Show saved copies</button></div>
+      <div class="stack" id="reclist"></div>
+    </div>
     <div class="card stack" data-fold id="logcard">
       <div class="cardhead"><h2>Change history</h2><span class="tiny muted">Who changed what</span></div>
       <div class="stack" id="loglist"><div class="tiny muted">Loading…</div></div>
@@ -951,7 +958,7 @@ body:not([data-role]) .panel{visibility:hidden}
 
 <script src="config.js?v=4ae33b4376"></script>
 <script src="vendor/supabase.js?v=34035ac76d"></script>
-<script src="js/backend.js?v=c987955990"></script>
+<script src="js/backend.js?v=cd5526df16"></script>
 <script>
 const SECTIONS = [
  {n:"Sales & revenue performance",w:10,c:["Weekly sales target achieved, compared with actual sales","Sales compared with previous week and same week last year","Sales by all retail categories reviewed","Commission income reported separately from shop sales","Average transaction value and transaction count reviewed","Top-selling and underperforming products identified","Peak-hour and overnight sales performance reviewed","Actions agreed to improve next week's sales"]},
@@ -1107,15 +1114,18 @@ async function autoSubmit(){ return; // visits stay drafts until a super admin a
 const cu = n => { try{ return (window.claude && typeof window.claude.use==="function") ? Promise.resolve(window.claude.use(n)).catch(()=>null) : Promise.resolve(null); }catch(e){ return Promise.resolve(null); } };
 let db = null; const timers = {}, busy = {};
 let assetsP = cu("assets");
-const REASONS = {not_granted:"permission not given", capability_disabled:"not available in this view", capability_removed:"not available in this view", invalid_argument:"the account store refused the save", viewonly:"you are viewing only", transform_error:"data couldn't be prepared", quota_exceeded:"storage full", resource_exhausted:"too many saves at once", unavailable:"connection problem", revoked:"access changed", nodb:"not signed in, or saving isn't allowed here"};
+const REASONS = {"42501":"the edit window for this visit has closed, so only a super admin can change it", conflict:"someone else saved at the same moment", error:"the database refused the save", not_granted:"permission not given", capability_disabled:"not available in this view", capability_removed:"not available in this view", invalid_argument:"the account store refused the save", viewonly:"you are viewing only", transform_error:"data couldn't be prepared", quota_exceeded:"storage full", resource_exhausted:"too many saves at once", unavailable:"connection problem", revoked:"access changed", nodb:"not signed in, or saving isn't allowed here"};
 let viewOnly=null;
 cu("user").then(async u=>{ if(!u) return; try{ const c=await u.canEdit(); viewOnly = c===false; if(viewOnly) setSync("local","viewonly"); photoNote(); }catch(e){} });
 function setSync(s, code){
   const el=$("sync"), btn=$("syncnow");
   if(viewOnly && s!=="synced" && s!=="busy") code="viewonly";
-  if(s==="synced"){ el.textContent="Saved"; btn.hidden=true; return; }
-  if(s==="busy"){ el.textContent="Saving to your account…"; btn.hidden=true; return; }
+  if(s==="synced"){ lastErr=""; el.textContent = "Saved"+(lastSavedAt ? " at "+new Date(lastSavedAt).toLocaleTimeString("en-GB",{timeZone:"Europe/London",hour:"2-digit",minute:"2-digit"}) : ""); el.className=""; btn.hidden=true; return; }
+  if(s==="busy"){ el.textContent="Saving…"; el.className=""; btn.hidden=true; return; }
   const why = REASONS[code] || (code ? String(code) : "");
+  if(s==="error"){ el.className="syncerr";
+    try{ if(st && st.updatedAt && window.AUTH && AUTH.CAN_EDIT()){ AUTH.keepDeviceCopy(slot, JSON.stringify(JSON.parse(lean(st))), "not saved: "+(why||code)); AUTH.sendDeviceCopies(); } }catch(e){}
+    if(lastErr!==String(code)){ lastErr=String(code); toast(`Not saved${why?` (${why})`:""}. Your entries are kept on this device. Tap "Save to account now" to try again.`); } }
   el.textContent = s==="error" ? `Saved on this device only. Not saved to your account${why?` (${why})`:""}.` : `Saved on this device only${why?` (${why})`:""}.`;
   btn.hidden=false;
 }
@@ -1169,10 +1179,96 @@ async function renderLog(){
   el.innerHTML = logRows.map(r=>{ const pr=ps[r.uid]||{}; return `<div class="logrow"><div class="loghead">${pr.avatarUrl?`<img src="${esc(pr.avatarUrl)}" alt="" class="av">`:""}<b class="logname"></b><span class="tiny muted">${esc(fmtWhen(r.at))}${r.visit?` · visit ${esc(fmtDate(r.visit))}`:""}</span></div><ul class="listplain">${(r.what||[]).map(w=>`<li>${esc(w)}</li>`).join("")}</ul></div>`; }).join("");
   el.querySelectorAll(".logname").forEach((n,i)=>{ const pr=ps[logRows[i].uid]||{}; n.textContent = logRows[i].actor || "Unknown"; });
 }
+/* ---------- safe saving: combine everyone's changes field by field ----------
+   Each browser remembers the last copy it read from the database (the "base"). When it saves, it compares
+   its own copy and the database's copy with that base: whatever this person changed is kept, whatever
+   someone else changed meanwhile is kept too. Only when two people change the very same box does the
+   person saving last win. The database refuses a save made on top of an out-of-date copy, so the page
+   reads the newer copy, combines it and tries again. */
+const BASEK = sl => (sl==="draft" ? KEY : KEY+"-next")+"-base";
+const bases = { draft: lsGet(BASEK("draft")), next: lsGet(BASEK("next")) };
+function setBase(sl, at, S){ bases[sl] = S ? {at, s:JSON.parse(JSON.stringify(S))} : null; if(S) lsSet(BASEK(sl), bases[sl]); else { try{ localStorage.removeItem(BASEK(sl)); }catch(e){} } }
+const SKIPK = new Set(["updatedAt","_hidden"]);
+const isObj = v => v && typeof v==="object" && !Array.isArray(v);
+const jeq = (a,b) => JSON.stringify(a===undefined?null:a)===JSON.stringify(b===undefined?null:b);
+const blankV = v => v===undefined || v===null || v==="" || (isObj(v) && !Object.keys(v).length) || (Array.isArray(v) && !v.length);
+const itemKey = x => isObj(x) ? (x.id!=null ? "id:"+x.id : x.k!=null ? "k:"+x.k : x.at!=null ? "at:"+x.at : null) : null;
+function merge3(base, mine, theirs){
+  if(jeq(mine, theirs)) return mine;
+  if(base!==undefined){ if(jeq(mine, base)) return theirs; if(jeq(theirs, base)) return mine; }
+  else { if(blankV(mine)) return theirs; if(blankV(theirs)) return mine; }
+  if(isObj(mine) && isObj(theirs)){
+    const out={}, b=isObj(base)?base:undefined;
+    new Set([...Object.keys(theirs), ...Object.keys(mine)]).forEach(k=>{ if(SKIPK.has(k)) return;
+      const v = merge3(b ? b[k] : undefined, mine[k], theirs[k]); if(v!==undefined) out[k]=v; });
+    return out;
+  }
+  if(Array.isArray(mine) && Array.isArray(theirs) && mine.concat(theirs).every(x=>itemKey(x)!==null)){
+    const bm={}; (Array.isArray(base)?base:[]).forEach(x=>bm[itemKey(x)]=x);
+    const tm={}; theirs.forEach(x=>tm[itemKey(x)]=x); const mm={}; mine.forEach(x=>mm[itemKey(x)]=x);
+    const out=[];
+    mine.forEach(x=>{ const k=itemKey(x);
+      if(k in tm) out.push(merge3(k in bm ? bm[k] : undefined, x, tm[k]));
+      else if(!(k in bm) || !jeq(bm[k], x)) out.push(x); });            // removed by them: keep only if I changed it
+    theirs.forEach(x=>{ const k=itemKey(x); if(k in mm) return;
+      if(!(k in bm) || !jeq(bm[k], x)) out.push(x); });                  // removed by me: drop unless they changed it
+    return out;
+  }
+  return base===undefined ? theirs : mine;    // same box changed by both: without a shared base the database copy wins
+}
+// Put back photo data that only exists in this browser (not uploaded yet) after taking a combined copy.
+function reattach(target, from){ const loc={}; const walk=o=>{ if(Array.isArray(o)) o.forEach(walk); else if(o && typeof o==="object"){ if(typeof o.id==="string" && (o.data||o.local)) loc[o.id]=o; Object.values(o).forEach(walk); } }; walk(from);
+  const put=o=>{ if(Array.isArray(o)) o.forEach(put); else if(o && typeof o==="object"){ const l=typeof o.id==="string" && loc[o.id]; if(l){ if(l.data && !o.data) o.data=l.data; if(l.local && !o.local) o.local=l.local; } Object.values(o).forEach(put); } }; put(target); return target; }
+// Combine this browser's copy of a slot with the database's copy. Returns {S, rowAt, push}.
+const fresh = S => normalize(Object.assign(blank(), JSON.parse(JSON.stringify(S))));
+function combine(sl, mine, remote, rowAt){ const c=combine0(sl, mine, remote, rowAt); if(c.S && c.S!==mine) c.S=fresh(c.S); return c; }
+function combine0(sl, mine, remote, rowAt){
+  const b = bases[sl];
+  if(!remote) return {S:mine, rowAt, push:!!(mine && mine.updatedAt)};
+  if(!mine || !mine.updatedAt || role==="viewer") return {S:remote, rowAt, push:false};
+  if(b && b.at===rowAt) return {S:mine, rowAt, push:!jeq(Object.assign({},JSON.parse(lean(mine)),{updatedAt:0,_hidden:0}), Object.assign({},b.s,{updatedAt:0,_hidden:0}))};
+  if((mine.date||"")!==(remote.date||"")){
+    if(b && (b.s.date||"")===(remote.date||"") && (mine.date||"")!==(b.s.date||"")) return {S:mine, rowAt, push:true};   // this browser moved on to a new visit
+    try{ AUTH.keepDeviceCopy(sl, JSON.stringify(mine), "replaced by a different visit from the database"); }catch(e){}
+    return {S:remote, rowAt, push:false};
+  }
+  const m = JSON.parse(lean(mine));
+  const S = merge3(b && (b.s.date||"")===(remote.date||"") ? b.s : undefined, m, remote);
+  S.updatedAt = Math.max(+mine.updatedAt||0, +remote.updatedAt||0);
+  const push = !jeq(Object.assign({},S,{updatedAt:0,_hidden:0}), Object.assign({},remote,{updatedAt:0,_hidden:0}));
+  return {S:reattach(normalize(Object.assign(blank(), S)), mine), rowAt, push};
+}
+async function readSlot(sl){ const d=await db.doc("audit/"+sl).get(); const v=d.data()||{}; let r=null; try{ r=v.json ? JSON.parse(v.json) : null; }catch(e){} return {remote:r, rowAt:+v.rowAt||0}; }
+// Bring a newer copy into the page without disturbing typing.
+function applyCombined(S){ const before=JSON.stringify(st); st=S; lsSet(LSK(), st); if(slot==="draft") draftDate=st.date; else nextDate=st.date;
+  if(JSON.stringify(st)!==before){ quiet=true; try{ init(); } finally{ quiet=false; } applyLock(); } }
+let lastSavedAt=0, lastErr="";
+async function pushDraft(){
+  const sl=slot;
+  for(let tries=0; tries<5; tries++){
+    const snapMine = JSON.stringify(st);
+    const {remote, rowAt} = await readSlot(sl); if(sl!==slot) return;
+    const mine = JSON.parse(snapMine);
+    const c = combine(sl, mine, remote, rowAt);
+    if(!c.push){ setBase(sl, rowAt, remote); if(c.S!==mine && JSON.stringify(st)===snapMine) applyCombined(c.S); return; }
+    const out = JSON.parse(lean(c.S)); out.updatedAt = Date.now();
+    try{
+      const at = await db.doc("audit/"+sl).set({json:JSON.stringify(out), updatedAt:out.updatedAt, baseAt:rowAt});
+      setBase(sl, typeof at==="number" ? at : out.updatedAt, out);
+      if(sl===slot){ if(JSON.stringify(st)===snapMine){ if(c.S!==mine) applyCombined(c.S); }
+        else { const now=JSON.parse(JSON.stringify(st)); st=reattach(normalize(Object.assign(blank(), merge3(mine, now, c.S))), now); st.updatedAt=Date.now(); lsSet(LSK(), st); queueRemote("draft"); } }
+      return;
+    }catch(e){ if(e && e.code==="conflict") continue; throw e; }
+  }
+  throw Object.assign(new Error("busy"), {code:"resource_exhausted"});
+}
 async function pushRemote(w){
-  if(!db || role==="viewer" || role==="loading" || (w==="cfg" && role!=="owner")) return; if(busy[w]){ busy[w]="again"; return; } busy[w]=true;
+  if(!db || role==="viewer" || (w==="cfg" && role!=="owner")) return;
+  if(role==="loading"){ clearTimeout(timers["retry"+w]); timers["retry"+w]=setTimeout(()=>pushRemote(w),1500); return; }
+  if(busy[w]){ busy[w]="again"; return; } busy[w]=true;
+  if(w==="draft") setSync("busy");
   try{
-    if(w==="draft"){ const sl=slot, body={json:lean(st), updatedAt:st.updatedAt||Date.now()}; await db.doc("audit/"+sl).set(body); queueLog(); }
+    if(w==="draft"){ await pushDraft(); queueLog(); lastSavedAt=Date.now(); }
     else await db.doc("config/settings").set({json:JSON.stringify(cfg), updatedAt:cfg.updatedAt||Date.now()});
     setSync("synced");
   }catch(e){ setSync("error", errCode(e)); }
@@ -1197,7 +1293,7 @@ function listenWeeks(){
       const missing = weeks.filter(w=>!ids.has(w.id) || (w.savedAt||0) > ((remote.find(r=>r.id===w.id)||{}).savedAt||0));
       const adopted = adoptUploaded(remote.map(w=>{ try{ return [w.sum, JSON.parse(w.json)]; }catch(e){ return [w.sum]; } }));
       mergeWeeks(remote); if(adopted){ renderSections(); renderObs(); renderFindings(); renderTasks.done=false; renderTasks(); queueRemote("draft"); } renderMgmt(); photoNote();
-      if(SUPER()) missing.forEach(w=>db.doc("weeks/"+w.id).set(remoteWeek(w)).catch(e=>setSync("error", errCode(e))));
+      if(OWNER()) missing.forEach(w=>db.doc("weeks/"+w.id).set(remoteWeek(w)).catch(e=>setSync("error", errCode(e))));
     }, e=>{ listening=false; setSync("error", errCode(e)); });
   }catch(e){ listening=false; }
 }
@@ -1213,22 +1309,18 @@ async function connect(){
     let changed = false;
     if(cs.exists){ const v=cs.data()||{}; if((v.updatedAt||0) > (cfg.updatedAt||0) && v.json){ cfg=Object.assign(defCfg(), JSON.parse(v.json)); if(cfg.budget==="35000"){ cfg.budget="25000"; setTimeout(saveCfg,500); } lsSet(CKEY,cfg); changed=true; } else pushRemote("cfg"); }
     else pushRemote("cfg");
-    if(ds.exists){ const v=ds.data()||{}; try{ if(v.json && adoptUploaded([JSON.parse(v.json)])) changed=true; }catch(e){}
-      if(v.json){ const r=JSON.parse(v.json);
-        if(r.date===st.date && st.updatedAt && role!=="viewer"){ // same visit open in two browsers: combine them, nothing gets dropped
-          const remoteNewer=(v.updatedAt||0) > (st.updatedAt||0);
-          const before=JSON.stringify(st); const merged=remoteNewer ? mergeStates(r, st) : mergeStates(st, r);
-          st=normalize(Object.assign(blank(), merged)); st.updatedAt=Date.now(); lsSet(KEY,st);
-          if(JSON.stringify(Object.assign({},st,{updatedAt:0}))!==JSON.stringify(Object.assign(JSON.parse(before),{updatedAt:0}))) changed=true;
-          pushRemote("draft");
-        } else if(role==="viewer" || (v.updatedAt||0) > (st.updatedAt||0)){ keepPhotoData(r); changed=true; }
-        else if(st.updatedAt) pushRemote("draft");
-      } else if(st.updatedAt) pushRemote("draft"); }
-    else if(st.updatedAt) pushRemote("draft");
+    { const v=ds.data()||{}; let r=null; try{ r=v.json ? JSON.parse(v.json) : null; if(r && adoptUploaded([r])) changed=true; }catch(e){}
+      // same visit open in several browsers: combine field by field, nothing gets dropped
+      const c = combine("draft", st, r, +v.rowAt||0);
+      if(c.S!==st){ const before=JSON.stringify(st); st=c.S; lsSet(KEY,st); if(JSON.stringify(st)!==before) changed=true; }
+      if(!c.push && r) setBase("draft", c.rowAt, r);
+      if(c.push) pushRemote("draft"); }
     draftDate = st.date;
-    try{ const nx=await db.doc("audit/next").get(); const v=nx.exists?(nx.data()||{}):{};
-      if(v.json){ const r=JSON.parse(v.json); const loc=lsGet(KEY+"-next"); if(!loc || (v.updatedAt||0)>(loc.updatedAt||0)) lsSet(KEY+"-next", r); nextDate=r.date; }
-      else if(nx.exists){ try{ localStorage.removeItem(KEY+"-next"); }catch(e){} nextDate=null; } }catch(e){}
+    try{ const {remote:r, rowAt} = await readSlot("next"); const loc=lsGet(KEY+"-next");
+      if(r){ const c=combine("next", loc, r, rowAt); lsSet(KEY+"-next", c.S); nextDate=c.S.date; if(!c.push) setBase("next", rowAt, r);
+        else if(slot!=="next"){ const keep=slot; slot="next"; const keepSt=st; st=c.S; try{ await pushDraft(); }catch(e){} st=keepSt; slot=keep; } }
+      else if(rowAt){ if(loc && loc.updatedAt) try{ AUTH.keepDeviceCopy("next", JSON.stringify(loc), "next week was closed in the database"); }catch(e){}
+        try{ localStorage.removeItem(KEY+"-next"); }catch(e){} setBase("next", 0, null); nextDate=null; } }catch(e){}
     if(changed) init();
     lastLogged=JSON.parse(lean(st));
     renderSlotBar();
@@ -1300,7 +1392,7 @@ async function uploadPhotosNow(){
   assetsP = cu("assets"); if(!db) db = await cu("db");
   const r = await uploadDevicePhotos();
   if(r.moved){
-    try{ if(db){ await db.doc(DOC()).set({json:lean(st), updatedAt:st.updatedAt||Date.now()}); if(SUPER()) for(const w of weeks) await db.doc("weeks/"+w.id).set(remoteWeek(w)); setSync("synced"); } }catch(e){ setSync("error", errCode(e)); }
+    try{ if(db){ await pushDraft(); if(OWNER()) for(const w of weeks) await db.doc("weeks/"+w.id).set(remoteWeek(w)); lastSavedAt=Date.now(); setSync("synced"); } }catch(e){ setSync("error", errCode(e)); }
     renderSections(); renderObs(); renderFindings(); renderTasks.done=false; renderTasks(); renderMgmt();
   }
   photoNote();
@@ -1315,8 +1407,9 @@ async function syncNow(){
   assetsP = cu("assets");
   const ph = await uploadDevicePhotos();
   try{
-    await db.doc(DOC()).set({json:lean(st), updatedAt:st.updatedAt||Date.now()});
-    if(SUPER()){ await db.doc("config/settings").set({json:JSON.stringify(cfg), updatedAt:cfg.updatedAt||Date.now()});
+    if(!st.updatedAt) st.updatedAt=Date.now();
+    await pushDraft(); lastSavedAt=Date.now();
+    if(OWNER()){ await db.doc("config/settings").set({json:JSON.stringify(cfg), updatedAt:cfg.updatedAt||Date.now()});
     for(const w of weeks) await db.doc("weeks/"+w.id).set(remoteWeek(w)); }
     setSync("synced"); listenWeeks(); init(); renderMgmt();
     toast(`Saved to your account: this visit and ${weeks.length} week${weeks.length===1?"":"s"}.${ph.left?` ${ph.left} photo${ph.left===1?"":"s"} not uploaded: ${PHOTO_WHY[ph.why]||ph.why||"unknown reason"}.`:""}`); photoNote();
@@ -2115,10 +2208,10 @@ function renderSlotBar(){ const el=$("slotbar"); if(!el) return; document.body.c
   if(slot==="next") h+=`<span class="slotnote" title="The earlier week is still waiting for approval. Its tasks are under Actions &amp; tasks to check now, and your ticks are kept when it's approved.">Entering next week</span>`;
   if(el.innerHTML!==h) el.innerHTML=h; }
 async function loadSlot(sl){ let S=lsGet(sl==="draft"?KEY:KEY+"-next");
-  if(db){ try{ const d=await db.doc("audit/"+sl).get(); const v=d.exists?(d.data()||{}):{}; if(v.json){ const r=JSON.parse(v.json); if(!S || (v.updatedAt||0)>(S.updatedAt||0)) S=r; } }catch(e){} }
+  if(db){ try{ const {remote:r, rowAt}=await readSlot(sl); if(r){ const c=combine(sl, S, r, rowAt); S=c.S; if(!c.push) setBase(sl, rowAt, r); } }catch(e){} }
   return S; }
 async function switchSlot(to){ if(to===slot) return;
-  clearTimeout(timers.draft); if(db && role!=="viewer"){ try{ await db.doc(DOC()).set({json:lean(st), updatedAt:st.updatedAt||Date.now()}); }catch(e){} }
+  clearTimeout(timers.draft); if(db && role!=="viewer" && st.updatedAt){ try{ await pushDraft(); }catch(e){ setSync("error", errCode(e)); toast("This week couldn't be saved to the database, so you stay on it. Try again in a moment."); return; } }
   const S=await loadSlot(to); if(!S){ toast("That week couldn't be loaded."); return; }
   if(to==="next"){ try{ const D = slot==="draft" ? st : (await loadSlot("draft")); if(D) S.carry = mergeCarry(buildCarry(normalize(Object.assign(blank(), JSON.parse(JSON.stringify(D))))), S.carry); }catch(e){} }
   slot=to; st=normalize(Object.assign(blank(), S)); lsSet(LSK(), st); prevCache={id:null,st:null}; firstShown=true; lastLogged=JSON.parse(lean(st));
@@ -2129,7 +2222,7 @@ async function startNextWeek(){ if(!canStartNext()) return;
   const base = slot==="draft" ? st : (lsGet(KEY)||st);
   const nx = blank(); Object.assign(nx, {store:base.store, manager:base.manager, auditor:base.auditor, kpi:{target:(base.kpi||{}).target||"50000"}, date:plusDays(draftDate,7), updatedAt:Date.now()});
   lsSet(KEY+"-next", nx); nextDate=nx.date;
-  if(db){ try{ await db.doc("audit/next").set({json:lean(nx), updatedAt:nx.updatedAt}); }catch(e){ toast("Next week was saved on this device only."); } }
+  if(db){ try{ const at=await db.doc("audit/next").set({json:lean(nx), updatedAt:nx.updatedAt}); setBase("next", typeof at==="number"?at:nx.updatedAt, JSON.parse(lean(nx))); }catch(e){ toast("Next week was saved on this device only."); } }
   logEvent(`Started entering next week (${wkRange(weekStart(nx.date))}) while ${wkRange(weekStart(draftDate))} awaits approval`);
   await switchSlot("next"); }
 // Tasks a week hands on to the next one. Works on any week's data (S), so next week can preview them early.
@@ -2154,7 +2247,7 @@ async function startNext(){
   let next; const pending = nextDate ? await loadSlot("next") : null;
   if(pending){ next = normalize(Object.assign(blank(), pending)); next.carry = mergeCarry(carry, next.carry);
     if(!next.manager) next.manager=st.manager; if(!next.auditor) next.auditor=st.auditor;
-    try{ localStorage.removeItem(KEY+"-next"); }catch(e){} nextDate=null; if(db){ try{ await db.doc("audit/next").set({json:"", updatedAt:Date.now(), merged:true}); }catch(e){} } }
+    try{ localStorage.removeItem(KEY+"-next"); }catch(e){} nextDate=null; setBase("next", 0, null); if(db){ try{ await db.doc("audit/next").set({json:"", updatedAt:Date.now(), merged:true}); }catch(e){} } }
   else { next = blank(); const nd = today()===st.date ? plusDays(st.date,7) : today();
     Object.assign(next, {store:st.store, manager:st.manager, auditor:st.auditor, kpi:{target:st.kpi.target||"50000"}, carry, date:nd}); }
   logEvent(`Approved the visit of ${fmtDate(st.date)} and started the next week`); lastLogged=null;
@@ -2707,14 +2800,17 @@ let lastEdit = 0; const _save = save; save = function(){ lastEdit = Date.now(); 
 async function pullRemote(){
   if(!db || document.hidden || busy.draft || Date.now()-lastEdit < 8000) return;
   const ae=document.activeElement; if(ae && /INPUT|TEXTAREA|SELECT/.test(ae.tagName) && role!=="viewer") return;
-  try{ const d=await db.doc(DOC()).get(); const v=d.exists?(d.data()||{}):{}; if(!v.json) return;
-    if((v.updatedAt||0) <= (st.updatedAt||0) && role!=="viewer") return;
-    const r=JSON.parse(v.json); const before=JSON.stringify(st);
-    st = normalize(Object.assign(blank(), (r.date===st.date && role!=="viewer") ? mergeStates(r, st) : r)); st.updatedAt=Math.max(v.updatedAt||0, st.updatedAt||0); lsSet(LSK(), st);
-    if(JSON.stringify(st)!==before){ quiet=true; try{ init(); } finally{ quiet=false; } applyLock(); lastLogged=JSON.parse(lean(st)); }
+  try{ const sl=slot; const {remote:r, rowAt}=await readSlot(sl); if(!r || sl!==slot || busy.draft) return;
+    const b=bases[sl]; if(b && b.at===rowAt && role!=="viewer") return;        // nothing new in the database
+    const snapMine=JSON.stringify(st); const c=combine(sl, JSON.parse(snapMine), r, rowAt);
+    if(JSON.stringify(st)!==snapMine) return;                                     // typed meanwhile: the next save combines
+    setBase(sl, rowAt, r); if(c.S.date===st.date || role==="viewer" || !c.push){ applyCombined(c.S); lastLogged=JSON.parse(lean(st)); }
+    if(c.push) queueRemote("draft");
   }catch(e){}
 }
-setInterval(pullRemote, 30000); document.addEventListener("visibilitychange", ()=>{ if(!document.hidden) pullRemote(); });
+setInterval(pullRemote, 30000);
+// Warn before closing the page while a save is still on its way or has failed.
+window.addEventListener("beforeunload", e=>{ if(role!=="viewer" && (busy.draft || lastErr)){ e.preventDefault(); e.returnValue=""; } }); document.addEventListener("visibilitychange", ()=>{ if(!document.hidden) pullRemote(); });
 
 /* ---------- account: sign in, store manager mode, people ---------- */
 function renderAccount(){
@@ -2723,6 +2819,7 @@ function renderAccount(){
   el.innerHTML = `<div class="acct"><span class="acctdot ${m.role}"></span><span class="accttext"><b>${esc(who[0])}</b><span>${esc(who[1]||"")}</span></span></div>
     <div class="acctbtns">${m.role==="viewer" ? `<button type="button" class="btn sm" id="signin">Sign in</button><button type="button" class="btn sm ghost" id="smbtn">Store manager</button>` : `<button type="button" class="btn sm ghost" id="signout">${m.role==="sm"?"Leave store manager mode":"Sign out"}</button>`}</div>`;
   const pc=$("peoplecard"); if(pc){ pc.hidden = m.role!=="super"; if(m.role==="super") renderPeople(); }
+  const rc=$("reccard"); if(rc) rc.hidden = m.role!=="super";
 }
 function openDlg(id){ document.querySelectorAll(".authdlg").forEach(d=>d.classList.remove("on")); const d=$(id); d.classList.add("on"); const f=d.querySelector("input"); if(f) setTimeout(()=>f.focus(),30); }
 function closeDlg(){ document.querySelectorAll(".authdlg").forEach(d=>d.classList.remove("on")); }
@@ -2764,6 +2861,49 @@ document.addEventListener("keydown", e=>{ if(e.key==="Escape") closeDlg();
 async function renderPeople(){ const el=$("pplist"); if(!el) return;
   try{ const L=await AUTH.members(); el.innerHTML = `<table><thead><tr><th>Email</th><th>Name</th><th>Access</th><th></th></tr></thead><tbody>${L.map(x=>`<tr><td>${esc(x.email)}</td><td>${esc(x.name||"")}</td><td>${x.role==="super"?"Super admin":"HR"}</td><td class="r">${x.email===AUTH.me.email?'<span class="tiny muted">You</span>':`<button type="button" class="notebtn" data-rmmember="${esc(x.email)}">Remove</button>`}</td></tr>`).join("")}</tbody></table>`; }
   catch(e){ el.innerHTML='<div class="tiny muted">Couldn\'t load the list.</div>'; } }
+
+/* ---------- recover entries from device copies and earlier saves (super admins) ---------- */
+let recRows=[];
+function fillBlanks(cur, add){            // add whatever is empty in cur, never replace a value
+  if(blankV(cur)) return add;
+  if(isObj(cur) && isObj(add)){ const out=Object.assign({}, cur); Object.keys(add).forEach(k=>{ if(SKIPK.has(k)) return; out[k]=fillBlanks(cur[k], add[k]); }); return out; }
+  if(Array.isArray(cur) && Array.isArray(add) && cur.concat(add).every(x=>itemKey(x)!==null)){ const m={}; cur.forEach(x=>m[itemKey(x)]=x);
+    return cur.map(x=>{ const o=add.find(y=>itemKey(y)===itemKey(x)); return o ? fillBlanks(x,o) : x; }).concat(add.filter(x=>!(itemKey(x) in m))); }
+  return cur;
+}
+function countAdds(cur, add){ let n=0; const walk=(c,a)=>{ if(blankV(a)) return; if(blankV(c)){ n++; return; } if(isObj(c)&&isObj(a)) Object.keys(a).forEach(k=>{ if(!SKIPK.has(k)) walk(c[k],a[k]); }); }; walk(cur, add); return n; }
+function recWhat(S){ const o=[]; const h=S.dsrHR||{}; if(h.done||h.issues) o.push("daily sales record");
+  const d=(S.pur||{}).daily||{}; const days=Object.values(d).reduce((t,x)=>t+Object.values(x||{}).filter(v=>v!=="" && v!=null).length,0); if(days) o.push(`${days} purchase entr${days===1?"y":"ies"}`);
+  const k=Object.keys(S.kpi||{}).filter(x=>x!=="target" && S.kpi[x]!=="").length; if(k) o.push(`${k} KPI figure${k===1?"":"s"}`);
+  const ol=Object.values(S.ol||{}).filter(v=>v!=="" && v!=null).length; if(ol) o.push("online orders");
+  const sc=Object.keys(S.s||{}).length; if(sc) o.push(`${sc} score${sc===1?"":"s"}`);
+  return o.join(", ") || "no entries"; }
+async function loadRecovery(){
+  const el=$("reclist"); el.innerHTML='<div class="tiny muted">Loading…</div>';
+  let r; try{ r=await AUTH.listBackups(); }catch(e){ el.innerHTML='<div class="tiny muted">Saved copies aren\'t set up yet. Run the database update (supabase-update-save-safety.sql) first.</div>'; return; }
+  const part = x => { const d=x.data||{}; return x.part==="private" ? d : d; };
+  // history keeps the public and private parts separately: pair them up by time
+  const hist=[]; (r.history||[]).forEach(x=>{ const t=+x.updated_at; let g=hist.find(y=>y.slot===x.slot && Math.abs(y.t-t)<3000); if(!g){ g={slot:x.slot, t, who:x.updated_by, at:x.at, S:{}}; hist.push(g); }
+    const d=part(x); if(x.part==="private"){ ["kpi","pur","dsr","dsrHR","ol"].forEach(k=>{ if(k in d) g.S[k]=d[k]; }); ["s","notes","act","photos","docs"].forEach(m=>{ g.S[m]=Object.assign({}, g.S[m]||{}, d[m]||{}); }); }
+    else { const keep=g.S; g.S=Object.assign({}, d); ["s","notes","act","photos","docs"].forEach(m=>{ g.S[m]=Object.assign({}, d[m]||{}, keep[m]||{}); }); ["kpi","pur","dsr","dsrHR","ol"].forEach(k=>{ if(k in keep) g.S[k]=keep[k]; }); } });
+  recRows = (r.backups||[]).map(x=>({src:"Browser copy", who:x.actor, at:Date.parse(x.at), slot:x.slot, S:x.data||{}, note:x.note}))
+    .concat(hist.map(g=>({src:"Earlier save", who:g.who, at:Date.parse(g.at), slot:g.slot, S:g.S, note:"before it was replaced"})))
+    .filter(x=>x.S && x.S.date).sort((a,b)=>b.at-a.at);
+  if(!recRows.length){ el.innerHTML='<div class="tiny muted">No saved copies yet. They appear here when someone opens the page in their browser, and every time a save replaces someone else\'s.</div>'; return; }
+  el.innerHTML = `<div class="tablewrap nohead"><table><thead><tr><th>When</th><th>From</th><th>Week of visit</th><th>Holds</th><th>Missing here</th><th></th></tr></thead><tbody>${recRows.map((x,i)=>{
+    const same = x.S.date===st.date; const n = same ? countAdds(JSON.parse(lean(st)), x.S) : 0;
+    return `<tr><td>${esc(fmtWhen(x.at))}</td><td>${esc(x.src)}<br><span class="tiny muted">${esc(x.who||"unknown")}</span></td><td>${esc(fmtDate(x.S.date))}</td><td class="tiny">${esc(recWhat(x.S))}</td><td class="num">${same?n:'<span class="tiny muted">other week</span>'}</td><td class="r">${same && n ? `<button type="button" class="notebtn" data-recadd="${i}">Add missing entries</button>` : ""}</td></tr>`; }).join("")}</tbody></table></div>`;
+}
+document.addEventListener("click", e=>{
+  if(e.target.closest("#rec_load")){ loadRecovery(); return; }
+  const b=e.target.closest("[data-recadd]"); if(!b) return;
+  if(role!=="owner"){ toast("Only a super admin can recover entries."); return; }
+  const x=recRows[+b.dataset.recadd]; if(!x || x.S.date!==st.date){ toast("Open the week of that visit first."); return; }
+  const n=countAdds(JSON.parse(lean(st)), x.S);
+  const keepPhotos=st; st=reattach(normalize(Object.assign(blank(), fillBlanks(JSON.parse(lean(st)), JSON.parse(JSON.stringify(x.S))))), keepPhotos);
+  init(); save(); logEvent(`Recovered ${n} entr${n===1?"y":"ies"} from ${x.src.toLowerCase()} of ${x.who||"unknown"} (${fmtWhen(x.at)})`);
+  toast(`Added ${n} missing entr${n===1?"y":"ies"}. Saving…`); setTimeout(loadRecovery, 2500);
+});
 
 /* ---------- one-off import from the old Claude page ---------- */
 $("imp_file") && $("imp_file").addEventListener("change", async e=>{ const f=e.target.files[0]; e.target.value=""; if(!f) return;

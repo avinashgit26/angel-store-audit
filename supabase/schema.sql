@@ -322,3 +322,83 @@ create policy "audit documents delete" on storage.objects for delete to authenti
 -- quick check: should list 1 bucket and 2 triggers
 select (select count(*) from storage.buckets where id = 'documents') as documents_bucket,
        (select count(*) from pg_trigger where tgname in ('drafts_window','drafts_private_window')) as lock_triggers;
+
+-- ================================================================ update 27 Nov 2026: saves can't be lost
+
+-- ---------------------------------------------------------------- 1. Copies from each person's browser
+-- The page sends what the browser holds (once per change) so a super admin can recover entries
+-- that never reached the database, or were later replaced.
+create table if not exists public.device_backups (
+  id bigserial primary key,
+  at timestamptz not null default now(),
+  actor text,
+  role text,
+  slot text,
+  visit text,
+  local_updated_at bigint,
+  note text,
+  data jsonb
+);
+create index if not exists device_backups_at on public.device_backups (at desc);
+create or replace function public.stamp_backup() returns trigger
+language plpgsql security definer set search_path = public as $$
+begin
+  new.actor := actor_name(); new.role := my_role(); new.at := now();
+  -- the store manager's copy never keeps sales, profit, purchases or KPI figures
+  if new.role = 'sm' and new.data is not null then
+    new.data := new.data - 'kpi' - 'pur' - 'dsr' - 'dsrHR' - 'ol';
+  end if;
+  return new;
+end $$;
+drop trigger if exists device_backups_stamp on public.device_backups;
+create trigger device_backups_stamp before insert on public.device_backups for each row execute function public.stamp_backup();
+alter table public.device_backups enable row level security;
+drop policy if exists device_backups_insert on public.device_backups;
+create policy device_backups_insert on public.device_backups for insert with check (public.can_edit());
+drop policy if exists device_backups_read on public.device_backups;
+create policy device_backups_read on public.device_backups for select using (public.is_member());
+grant select, insert on public.device_backups to authenticated;
+grant usage, select on sequence public.device_backups_id_seq to authenticated;
+
+-- ---------------------------------------------------------------- 2. History of every save that replaced someone else's
+-- Before a save replaces the open week, the old copy is kept when the person saving is different,
+-- or the last kept copy is more than 10 minutes old. Copies older than 60 days are removed.
+create table if not exists public.drafts_history (
+  id bigserial primary key,
+  at timestamptz not null default now(),
+  slot text,
+  part text,                 -- 'public' or 'private'
+  updated_at bigint,
+  updated_by text,
+  data jsonb
+);
+create index if not exists drafts_history_at on public.drafts_history (at desc);
+create or replace function public.keep_draft_history() returns trigger
+language plpgsql security definer set search_path = public as $$
+declare last_at timestamptz; last_by text;
+begin
+  if old.data is null or old.data = '{}'::jsonb or old.data = new.data then return new; end if;
+  select h.at, h.updated_by into last_at, last_by from drafts_history h
+   where h.slot = old.slot and h.part = tg_argv[0] order by h.at desc limit 1;
+  if last_at is null or last_at < now() - interval '10 minutes'
+     or coalesce(old.updated_by, '') <> coalesce(new.updated_by, '') or coalesce(last_by, '') <> coalesce(old.updated_by, '') then
+    insert into drafts_history(slot, part, updated_at, updated_by, data)
+    values (old.slot, tg_argv[0], old.updated_at, old.updated_by, old.data);
+  end if;
+  delete from drafts_history where at < now() - interval '60 days';
+  return new;
+end $$;
+drop trigger if exists drafts_history_keep on public.drafts;
+create trigger drafts_history_keep after update on public.drafts
+  for each row execute function public.keep_draft_history('public');
+drop trigger if exists drafts_private_history_keep on public.drafts_private;
+create trigger drafts_private_history_keep after update on public.drafts_private
+  for each row execute function public.keep_draft_history('private');
+alter table public.drafts_history enable row level security;
+drop policy if exists drafts_history_read on public.drafts_history;
+create policy drafts_history_read on public.drafts_history for select using (public.is_super());
+grant select on public.drafts_history to authenticated;
+
+-- quick check: should show 2 tables and 2 history triggers
+select (select count(*) from information_schema.tables where table_schema = 'public' and table_name in ('device_backups','drafts_history')) as new_tables,
+       (select count(*) from pg_trigger where tgname in ('drafts_history_keep','drafts_private_history_keep')) as history_triggers;
