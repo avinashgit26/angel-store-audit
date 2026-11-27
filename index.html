@@ -958,7 +958,7 @@ body:not([data-role]) .panel{visibility:hidden}
 
 <script src="config.js?v=4ae33b4376"></script>
 <script src="vendor/supabase.js?v=34035ac76d"></script>
-<script src="js/backend.js?v=cd5526df16"></script>
+<script src="js/backend.js?v=7c7c21bcc7"></script>
 <script>
 const SECTIONS = [
  {n:"Sales & revenue performance",w:10,c:["Weekly sales target achieved, compared with actual sales","Sales compared with previous week and same week last year","Sales by all retail categories reviewed","Commission income reported separately from shop sales","Average transaction value and transaction count reviewed","Top-selling and underperforming products identified","Peak-hour and overnight sales performance reviewed","Actions agreed to improve next week's sales"]},
@@ -1187,7 +1187,11 @@ async function renderLog(){
    reads the newer copy, combines it and tries again. */
 const BASEK = sl => (sl==="draft" ? KEY : KEY+"-next")+"-base";
 const bases = { draft: lsGet(BASEK("draft")), next: lsGet(BASEK("next")) };
-function setBase(sl, at, S){ bases[sl] = S ? {at, s:JSON.parse(JSON.stringify(S))} : null; if(S) lsSet(BASEK(sl), bases[sl]); else { try{ localStorage.removeItem(BASEK(sl)); }catch(e){} } }
+// A base only counts for the same kind of access it was read with: a view-only or store manager copy has no
+// sales, purchases or KPI figures, so it must never be used as the starting point for a super admin or HR save.
+const roleGroup = () => (role==="owner"||role==="super") ? "member" : role;
+const baseFor = sl => { const b=bases[sl]; return b && b.role===roleGroup() ? b : null; };
+function setBase(sl, at, S){ bases[sl] = S ? {at, role:roleGroup(), s:JSON.parse(JSON.stringify(S))} : null; if(S) lsSet(BASEK(sl), bases[sl]); else { try{ localStorage.removeItem(BASEK(sl)); }catch(e){} } }
 const SKIPK = new Set(["updatedAt","_hidden"]);
 const isObj = v => v && typeof v==="object" && !Array.isArray(v);
 const jeq = (a,b) => JSON.stringify(a===undefined?null:a)===JSON.stringify(b===undefined?null:b);
@@ -1223,7 +1227,7 @@ function reattach(target, from){ const loc={}; const walk=o=>{ if(Array.isArray(
 const fresh = S => normalize(Object.assign(blank(), JSON.parse(JSON.stringify(S))));
 function combine(sl, mine, remote, rowAt){ const c=combine0(sl, mine, remote, rowAt); if(c.S && c.S!==mine) c.S=fresh(c.S); return c; }
 function combine0(sl, mine, remote, rowAt){
-  const b = bases[sl];
+  const b = baseFor(sl);
   if(!remote) return {S:mine, rowAt, push:!!(mine && mine.updatedAt)};
   if(!mine || !mine.updatedAt || role==="viewer") return {S:remote, rowAt, push:false};
   if(b && b.at===rowAt) return {S:mine, rowAt, push:!jeq(Object.assign({},JSON.parse(lean(mine)),{updatedAt:0,_hidden:0}), Object.assign({},b.s,{updatedAt:0,_hidden:0}))};
@@ -2801,7 +2805,7 @@ async function pullRemote(){
   if(!db || document.hidden || busy.draft || Date.now()-lastEdit < 8000) return;
   const ae=document.activeElement; if(ae && /INPUT|TEXTAREA|SELECT/.test(ae.tagName) && role!=="viewer") return;
   try{ const sl=slot; const {remote:r, rowAt}=await readSlot(sl); if(!r || sl!==slot || busy.draft) return;
-    const b=bases[sl]; if(b && b.at===rowAt && role!=="viewer") return;        // nothing new in the database
+    const b=baseFor(sl); if(b && b.at===rowAt && role!=="viewer") return;        // nothing new in the database
     const snapMine=JSON.stringify(st); const c=combine(sl, JSON.parse(snapMine), r, rowAt);
     if(JSON.stringify(st)!==snapMine) return;                                     // typed meanwhile: the next save combines
     setBase(sl, rowAt, r); if(c.S.date===st.date || role==="viewer" || !c.push){ applyCombined(c.S); lastLogged=JSON.parse(lean(st)); }

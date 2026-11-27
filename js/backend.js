@@ -133,9 +133,16 @@
       if(r.error) throw fail(r.error);
       if(!r.data || !r.data.length) throw conflict();
     }
-    if(MEMBER()){ const q = await sb.from("drafts_private").upsert({ slot, data: priv, updated_at: at }); if(q.error) throw fail(q.error); }
+    if(MEMBER()){
+      // Safety net: never replace a filled-in private part with an empty one (sales, profit, purchases, KPIs, Operations).
+      if(!privHasData(priv)){ const cur = await sb.from("drafts_private").select("data").eq("slot", slot).maybeSingle();
+        if(cur.data && privHasData(cur.data.data)) return at; }
+      const q = await sb.from("drafts_private").upsert({ slot, data: priv, updated_at: at }); if(q.error) throw fail(q.error); }
     return at;
   }
+  function privHasData(P){ if(!P) return false; const n = o => o && typeof o === "object" ? Object.keys(o).length : 0;
+    return PRIV_MAPS.some(m => n(P[m])) || Object.keys(P.kpi || {}).some(k => k !== "target" && P.kpi[k] !== "") || n(P.dsrHR) || n(P.dsr) ||
+      Object.values(P.ol || {}).some(v => v !== "" && v != null) || n(P.pur && P.pur.daily) || !!(P.pur && (P.pur.overReason || (P.pur.rows || []).length || (P.pur.counts || []).length)); }
   async function getCfg(){
     const p = await sb.from("config").select("*").eq("id", 1).maybeSingle(); if(p.error) throw fail(p.error);
     if(!p.data) return snap(null);
